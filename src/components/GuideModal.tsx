@@ -30,11 +30,11 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
   };
 
   const SNIPPETS = {
-    install: `npm install ve
+    install: `npm install ve-rich-text-editor
 # peer: react and react-dom >= 18`,
     quickstart: `import React, { useState, useRef } from 'react';
-import { RichTextEditor, type RichTextEditorRef } from 've';
-import 've/styles.css';
+import { RichTextEditor, type RichTextEditorRef } from 've-rich-text-editor';
+import 've-rich-text-editor/styles.css';
 
 export function MyEditor() {
   const [content, setContent] = useState('<p>Welcome to <strong>VE</strong>!</p>');
@@ -58,10 +58,10 @@ export function MyEditor() {
 'use client';
 
 import dynamic from 'next/dynamic';
-import 've/styles.css';
+import 've-rich-text-editor/styles.css';
 
 const RichTextEditor = dynamic(
-  () => import('ve').then((mod) => mod.RichTextEditor),
+  () => import('ve-rich-text-editor').then((mod) => mod.RichTextEditor),
   { ssr: false, loading: () => <div>Loading editor…</div> }
 );
 
@@ -73,8 +73,8 @@ export default function Page() {
   );
 }`,
     hookUsage: `import React from 'react';
-import { useRichTextEditor, EditorToolbar } from 've';
-import 've/styles.css';
+import { useRichTextEditor, EditorToolbar } from 've-rich-text-editor';
+import 've-rich-text-editor/styles.css';
 
 export function HeadlessEditor() {
   const { editor, getHTML, characterCount, wordCount } = useRichTextEditor({
@@ -90,7 +90,7 @@ export function HeadlessEditor() {
     </div>
   );
 }`,
-    customTheme: `import { RichTextEditor, type RichTextEditorTheme } from 've';
+    customTheme: `import { RichTextEditor, type RichTextEditorTheme } from 've-rich-text-editor';
 
 const customTheme: RichTextEditorTheme = {
   primaryColor: '#7c3aed',

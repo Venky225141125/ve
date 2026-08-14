@@ -221,8 +221,8 @@ export function App() {
       .join('\n');
 
     return `import React, { useState, useRef } from 'react';
-import { RichTextEditor, type RichTextEditorRef } from 've';
-import 've/styles.css';
+import { RichTextEditor, type RichTextEditorRef } from 've-rich-text-editor';
+import 've-rich-text-editor/styles.css';
 
 export default function DocumentEditor() {
   const [content, setContent] = useState(\`<p>Hello World</p>\`);

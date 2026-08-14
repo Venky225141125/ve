@@ -3,8 +3,8 @@
 A drop-in rich text editor for React and Next.js — the same idea as ReactQuill, with a modern Tiptap engine.
 
 ```tsx
-import { RichTextEditor } from 've';
-import 've/styles.css';
+import { RichTextEditor } from 've-rich-text-editor';
+import 've-rich-text-editor/styles.css';
 
 export function App() {
   return (
@@ -19,7 +19,7 @@ export function App() {
 ## Install
 
 ```bash
-npm install ve
+npm install ve-rich-text-editor
 ```
 
 `react` and `react-dom` (>= 18) are peer dependencies.
@@ -27,10 +27,10 @@ npm install ve
 Styles ship with the package. Import them once in your app:
 
 ```tsx
-import 've/styles.css';
+import 've-rich-text-editor/styles.css';
 ```
 
-The component also imports styles from the main entry, so a single `import { RichTextEditor } from 've'` is enough in most bundlers.
+The component also imports styles from the main entry, so a single `import { RichTextEditor } from 've-rich-text-editor'` is enough in most bundlers.
 
 ## Usage
 
@@ -38,8 +38,8 @@ The component also imports styles from the main entry, so a single `import { Ric
 
 ```tsx
 import { useState } from 'react';
-import { RichTextEditor } from 've';
-import 've/styles.css';
+import { RichTextEditor } from 've-rich-text-editor';
+import 've-rich-text-editor/styles.css';
 
 export default function Editor() {
   const [value, setValue] = useState('<p>Start writing…</p>');
@@ -61,7 +61,7 @@ export default function Editor() {
 
 ```tsx
 import { useRef } from 'react';
-import { RichTextEditor, type RichTextEditorRef } from 've';
+import { RichTextEditor, type RichTextEditorRef } from 've-rich-text-editor';
 
 const editorRef = useRef<RichTextEditorRef>(null);
 
@@ -80,10 +80,10 @@ editorRef.current?.focus();
 'use client';
 
 import dynamic from 'next/dynamic';
-import 've/styles.css';
+import 've-rich-text-editor/styles.css';
 
 const RichTextEditor = dynamic(
-  () => import('ve').then((mod) => mod.RichTextEditor),
+  () => import('ve-rich-text-editor').then((mod) => mod.RichTextEditor),
   { ssr: false }
 );
 
