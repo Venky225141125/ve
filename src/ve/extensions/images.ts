@@ -4,7 +4,7 @@ import { mergeAttributes } from '@tiptap/core';
 export interface CustomImageOptions {
   inline: boolean;
   allowBase64: boolean;
-  HTMLAttributes: Record<string, any>;
+  HTMLAttributes: Record<string, unknown>;
 }
 
 declare module '@tiptap/core' {
@@ -29,6 +29,13 @@ declare module '@tiptap/core' {
   }
 }
 
+function alignmentStyle(align: string): string {
+  if (align === 'left') return 'margin-right: auto; margin-left: 0; display: block;';
+  if (align === 'right') return 'margin-left: auto; margin-right: 0; display: block;';
+  if (align === 'inline') return 'display: inline-block; vertical-align: middle; margin: 0 4px;';
+  return 'margin-left: auto; margin-right: auto; display: block;';
+}
+
 export const CustomImage = Image.extend<CustomImageOptions>({
   name: 'image',
 
@@ -46,31 +53,18 @@ export const CustomImage = Image.extend<CustomImageOptions>({
       },
       width: {
         default: '100%',
+        parseHTML: (element) => element.getAttribute('width') || element.style.maxWidth || '100%',
         renderHTML: (attributes) => {
           if (!attributes.width) return {};
-          return {
-            width: attributes.width,
-            style: `max-width: ${typeof attributes.width === 'number' ? `${attributes.width}px` : attributes.width};`,
-          };
+          return { width: String(attributes.width) };
         },
       },
       alignment: {
         default: 'center',
-        renderHTML: (attributes) => {
-          const align = attributes.alignment || 'center';
-          let alignStyle = 'margin-left: auto; margin-right: auto; display: block;';
-          if (align === 'left') {
-            alignStyle = 'margin-right: auto; margin-left: 0; display: block;';
-          } else if (align === 'right') {
-            alignStyle = 'margin-left: auto; margin-right: 0; display: block;';
-          } else if (align === 'inline') {
-            alignStyle = 'display: inline-block; vertical-align: middle; margin: 0 4px;';
-          }
-          return {
-            'data-alignment': align,
-            style: alignStyle,
-          };
-        },
+        parseHTML: (element) => element.getAttribute('data-alignment') || 'center',
+        renderHTML: (attributes) => ({
+          'data-alignment': attributes.alignment || 'center',
+        }),
       },
       caption: {
         default: null,
@@ -79,7 +73,25 @@ export const CustomImage = Image.extend<CustomImageOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['img', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+    const alignment = (HTMLAttributes['data-alignment'] as string) || 'center';
+    const width = HTMLAttributes.width as string | number | undefined;
+    const styles: string[] = [];
+
+    if (HTMLAttributes.style) {
+      styles.push(String(HTMLAttributes.style));
+    }
+    if (width) {
+      styles.push(`max-width: ${typeof width === 'number' ? `${width}px` : width}`);
+    }
+    styles.push(alignmentStyle(alignment));
+
+    return [
+      'img',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        'data-alignment': alignment,
+        style: styles.filter(Boolean).join('; '),
+      }),
+    ];
   },
 
   addCommands() {

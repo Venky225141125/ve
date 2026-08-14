@@ -21,7 +21,8 @@ export function sanitizeHTML(html: string): string {
     ALLOWED_ATTR: [
       'href', 'src', 'alt', 'title', 'target', 'rel', 'class', 'style',
       'type', 'checked', 'disabled', 'width', 'height', 'frameborder',
-      'allow', 'allowfullscreen', 'colspan', 'rowspan', 'colwidth', 'data-type', 'dir'
+      'allow', 'allowfullscreen', 'colspan', 'rowspan', 'colwidth',
+      'data-type', 'data-alignment', 'data-youtube-video', 'dir'
     ],
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
     ADD_ATTR: ['target', 'rel'],
@@ -64,9 +65,12 @@ export function countWords(text: string): number {
  */
 export function calculateReadingTime(text: string): { minutes: number; text: string } {
   const words = countWords(text);
-  const minutes = Math.ceil(words / 200);
+  if (words === 0) {
+    return { minutes: 0, text: '0 min read' };
+  }
+  const minutes = Math.max(1, Math.ceil(words / 200));
   return {
-    minutes: Math.max(1, minutes),
-    text: minutes <= 1 ? '< 1 min read' : `${minutes} min read`
+    minutes,
+    text: words < 200 ? '< 1 min read' : `${minutes} min read`,
   };
 }

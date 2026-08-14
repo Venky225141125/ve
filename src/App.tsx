@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   Sparkles,
   Sliders,
@@ -35,9 +35,9 @@ const THEME_PRESETS: Record<string, { name: string; theme: RichTextEditorTheme }
   default: {
     name: 'Modern Slate',
     theme: {
-      primaryColor: '#3b82f6',
-      primaryHoverColor: '#2563eb',
-      borderRadius: '0.75rem',
+      primaryColor: '#2563eb',
+      primaryHoverColor: '#1d4ed8',
+      borderRadius: '0.625rem',
     },
   },
   emerald: {
@@ -167,6 +167,11 @@ export function App() {
 
   const editorRef = useRef<RichTextEditorRef>(null);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    return () => document.documentElement.classList.remove('dark');
+  }, [isDarkMode]);
+
   // Handle Preset change
   const handlePresetSelect = (presetId: string) => {
     const found = SAMPLE_PRESETS.find((p) => p.id === presetId);
@@ -217,6 +222,7 @@ export function App() {
 
     return `import React, { useState, useRef } from 'react';
 import { RichTextEditor, type RichTextEditorRef } from 've';
+import 've/styles.css';
 
 export default function DocumentEditor() {
   const [content, setContent] = useState(\`<p>Hello World</p>\`);
@@ -489,10 +495,12 @@ ${featureLines ? featureLines + '\n' : ''}        }}
               )}
 
               {activeInspectorTab === 'preview' && (
-                <div
-                  className="bg-white dark:bg-slate-900 p-4 rounded text-slate-900 dark:text-slate-100 font-sans leading-relaxed ProseMirror"
-                  dangerouslySetInnerHTML={{ __html: content }}
-                />
+                <div className="rte-root" style={{ border: 'none', boxShadow: 'none', borderRadius: 8 }}>
+                  <div
+                    className="ProseMirror"
+                    dangerouslySetInnerHTML={{ __html: content }}
+                  />
+                </div>
               )}
 
               {activeInspectorTab === 'json' && (
@@ -597,19 +605,24 @@ ${featureLines ? featureLines + '\n' : ''}        }}
                   />
                 </label>
                 {maxCharsEnabled && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min="200"
-                      max="3000"
-                      step="100"
-                      value={maxChars}
-                      onChange={(e) => setMaxChars(parseInt(e.target.value, 10))}
-                      className="w-full accent-blue-600 cursor-pointer"
-                    />
-                    <span className="text-xs font-mono text-slate-500 w-16 text-right">
-                      {maxChars} ch
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="200"
+                        max="3000"
+                        step="100"
+                        value={maxChars}
+                        onChange={(e) => setMaxChars(parseInt(e.target.value, 10))}
+                        className="w-full accent-blue-600 cursor-pointer"
+                      />
+                      <span className="text-xs font-mono text-slate-500 w-16 text-right">
+                        {maxChars} ch
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Typing and paste are blocked once the limit is reached. Existing content is not deleted.
+                    </p>
                   </div>
                 )}
               </div>

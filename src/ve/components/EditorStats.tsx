@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, FileText, Hash, CheckCircle2 } from 'lucide-react';
+import { Clock, FileText, Hash, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export interface EditorStatsProps {
   wordCount: number;
@@ -18,60 +18,57 @@ export const EditorStats: React.FC<EditorStatsProps> = ({
   isEditable = true,
   className = '',
 }) => {
-  const isNearLimit = maxCharacters ? characterCount >= maxCharacters * 0.9 : false;
-  const isOverLimit = maxCharacters ? characterCount > maxCharacters : false;
+  const hasLimit = typeof maxCharacters === 'number' && maxCharacters > 0;
+  const remaining = hasLimit ? maxCharacters - characterCount : 0;
+  const isAtLimit = hasLimit && remaining <= 0;
+  const isNearLimit = hasLimit && !isAtLimit && characterCount >= maxCharacters * 0.9;
 
   return (
-    <div
-      className={`
-        flex flex-wrap items-center justify-between gap-3 px-4 py-2 text-xs border-t
-        border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400
-        ${className}
-      `}
-    >
-      <div className="flex items-center gap-4">
-        {/* Words */}
-        <div className="flex items-center gap-1">
-          <FileText className="w-3.5 h-3.5 text-slate-400" />
-          <span className="font-medium text-slate-700 dark:text-slate-300">
-            {wordCount.toLocaleString()}
-          </span>
+    <div className={`rte-stats ${className}`.trim()}>
+      <div className="rte-stats-group">
+        <div className="rte-stat">
+          <FileText size={14} />
+          <strong>{wordCount.toLocaleString()}</strong>
           <span>{wordCount === 1 ? 'word' : 'words'}</span>
         </div>
-
-        {/* Characters */}
-        <div className="flex items-center gap-1">
-          <Hash className="w-3.5 h-3.5 text-slate-400" />
-          <span
-            className={`font-medium ${
-              isOverLimit
-                ? 'text-red-500 font-bold'
-                : isNearLimit
-                ? 'text-amber-500 font-semibold'
-                : 'text-slate-700 dark:text-slate-300'
-            }`}
-          >
-            {characterCount.toLocaleString()}
-          </span>
-          {maxCharacters ? (
-            <span className="text-slate-400">/ {maxCharacters.toLocaleString()} chars</span>
+        <div
+          className={`rte-stat ${isAtLimit ? 'is-over' : isNearLimit ? 'is-warn' : ''}`}
+          aria-live="polite"
+        >
+          <Hash size={14} />
+          <strong>{characterCount.toLocaleString()}</strong>
+          {hasLimit ? (
+            <span>/ {maxCharacters.toLocaleString()} chars</span>
           ) : (
             <span>{characterCount === 1 ? 'character' : 'characters'}</span>
           )}
         </div>
-
-        {/* Reading Time */}
-        <div className="hidden sm:flex items-center gap-1">
-          <Clock className="w-3.5 h-3.5 text-slate-400" />
+        <div className="rte-stat">
+          <Clock size={14} />
           <span>{readingTime.text}</span>
         </div>
       </div>
-
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 text-[11px] text-slate-400">
-          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-          <span>{isEditable ? 'Ready to write' : 'Read only mode'}</span>
-        </div>
+      <div className="rte-stat">
+        {isAtLimit ? (
+          <>
+            <AlertTriangle size={12} />
+            <span>
+              {remaining < 0
+                ? `${Math.abs(remaining).toLocaleString()} over limit — delete text to continue`
+                : 'Limit reached — delete text to continue'}
+            </span>
+          </>
+        ) : hasLimit ? (
+          <>
+            <CheckCircle2 size={12} />
+            <span>{remaining.toLocaleString()} characters remaining</span>
+          </>
+        ) : (
+          <>
+            <CheckCircle2 size={12} />
+            <span>{isEditable ? 'Ready to write' : 'Read only mode'}</span>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useEditor, type Editor, type JSONContent } from '@tiptap/react';
 import { createEditorExtensions } from '../extensions';
 import { extractRichTextValue, countWords, calculateReadingTime } from '../utils/serialization';
+import { applyEditorLink } from '../utils/links';
 import type { RichTextEditorProps, RichTextValue } from '../types/editor';
 
 export interface UseRichTextEditorOptions
@@ -51,6 +52,37 @@ export interface UseRichTextEditorReturn {
   insertTable: (options?: { rows?: number; cols?: number; withHeaderRow?: boolean }) => boolean;
 }
 
+function normalizeEditorHtml(html: string): string {
+  if (!html || html === '<p></p>') return '';
+  return html;
+}
+
+function getCharacterCountExtension(editor: Editor) {
+  return editor.extensionManager.extensions.find((ext) => ext.name === 'characterCount');
+}
+
+function setCharacterLimit(editor: Editor, limit?: number | null) {
+  const extension = getCharacterCountExtension(editor);
+  if (extension) {
+    extension.options.limit = limit ?? null;
+  }
+}
+
+function withLiftedCharacterLimit<T>(editor: Editor, fn: () => T): T {
+  const extension = getCharacterCountExtension(editor);
+  const previous = extension?.options.limit;
+  if (extension) {
+    extension.options.limit = null;
+  }
+  try {
+    return fn();
+  } finally {
+    if (extension) {
+      extension.options.limit = previous ?? null;
+    }
+  }
+}
+
 export function useRichTextEditor(options: UseRichTextEditorOptions = {}): UseRichTextEditorReturn {
   const {
     value,
@@ -69,77 +101,106 @@ export function useRichTextEditor(options: UseRichTextEditorOptions = {}): UseRi
     onUpdate,
   } = options;
 
-  // Memoize extensions to prevent unnecessary editor recreation
-  const extensions = useMemo(() => {
-    return createEditorExtensions({
-      features,
-      placeholder,
-      maxCharacters,
-      customExtensions,
-    });
-  }, [features, placeholder, maxCharacters, customExtensions]);
+  const onChangeRef = useRef(onChange);
+  const onChangeValueRef = useRef(onChangeValue);
+  const onFocusRef = useRef(onFocus);
+  const onBlurRef = useRef(onBlur);
+  const onUpdateRef = useRef(onUpdate);
+  const latestHtmlRef = useRef(normalizeEditorHtml(value ?? defaultValue ?? ''));
 
-  const initialContent = value !== undefined ? value : defaultValue ?? '';
+  onChangeRef.current = onChange;
+  onChangeValueRef.current = onChangeValue;
+  onFocusRef.current = onFocus;
+  onBlurRef.current = onBlur;
+  onUpdateRef.current = onUpdate;
 
-  const editor = useEditor({
-    extensions,
-    content: initialContent,
-    editable,
-    autofocus: autoFocus,
-    // Critical for Next.js App Router and SSR hydration compatibility
-    immediatelyRender: false,
-    editorProps: {
-      attributes: {
-        dir,
-        class: 'rte-prose-content focus:outline-none min-h-[160px] py-4 px-5 text-inherit',
+  const featuresKey = JSON.stringify(features ?? {});
+  const extensions = useMemo(
+    () =>
+      createEditorExtensions({
+        features,
+        placeholder,
+        maxCharacters,
+        customExtensions,
+      }),
+    // maxCharacters is applied live below so slider changes do not remount the editor.
+    // customExtensions is intentionally omitted: callers should memoize it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [featuresKey, placeholder]
+  );
+
+  const editor = useEditor(
+    {
+      extensions,
+      content: value !== undefined ? value : latestHtmlRef.current || defaultValue || '',
+      editable,
+      autofocus: autoFocus,
+      immediatelyRender: false,
+      shouldRerenderOnTransaction: true,
+      editorProps: {
+        attributes: {
+          dir,
+          class: 'rte-prose-content',
+        },
+      },
+      onUpdate: ({ editor: currentEditor }) => {
+        const html = normalizeEditorHtml(currentEditor.getHTML());
+        latestHtmlRef.current = html;
+        onChangeRef.current?.(html);
+        onChangeValueRef.current?.(extractRichTextValue(currentEditor));
+        onUpdateRef.current?.(currentEditor);
+      },
+      onFocus: () => {
+        onFocusRef.current?.();
+      },
+      onBlur: () => {
+        onBlurRef.current?.();
       },
     },
-    onUpdate: ({ editor: currentEditor }) => {
-      const html = currentEditor.getHTML();
-      const cleanHtml = html === '<p></p>' ? '' : html;
+    [extensions]
+  );
 
-      onChange?.(cleanHtml);
-
-      if (onChangeValue) {
-        onChangeValue(extractRichTextValue(currentEditor));
-      }
-
-      onUpdate?.(currentEditor);
-    },
-    onFocus: () => {
-      onFocus?.();
-    },
-    onBlur: () => {
-      onBlur?.();
-    },
-  });
-
-  // Synchronize controlled `value` prop
   useEffect(() => {
-    if (!editor || value === undefined) return;
+    if (!editor || editor.isDestroyed) return;
+    setCharacterLimit(editor, maxCharacters);
+  }, [editor, maxCharacters]);
 
-    const currentHTML = editor.getHTML();
-    const cleanCurrent = currentHTML === '<p></p>' ? '' : currentHTML;
-    const cleanNew = value === '<p></p>' ? '' : value;
+  useEffect(() => {
+    if (!editor || editor.isDestroyed || value === undefined) return;
 
-    if (cleanCurrent !== cleanNew) {
-      editor.commands.setContent(value, { emitUpdate: false });
+    const currentHTML = normalizeEditorHtml(editor.getHTML());
+    const nextHTML = normalizeEditorHtml(value);
+
+    if (currentHTML !== nextHTML) {
+      withLiftedCharacterLimit(editor, () => {
+        editor.commands.setContent(value || '', { emitUpdate: false });
+      });
+      latestHtmlRef.current = nextHTML;
     }
   }, [value, editor]);
 
-  // Synchronize `editable` prop
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     if (editor.isEditable !== editable) {
       editor.setEditable(editable);
     }
   }, [editable, editor]);
 
-  // Editor Action Callbacks
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        window.dispatchEvent(new CustomEvent('ve:open-link-modal', { detail: editor }));
+      }
+    };
+    editor.view.dom.addEventListener('keydown', onKeyDown);
+    return () => editor.view.dom.removeEventListener('keydown', onKeyDown);
+  }, [editor]);
+
   const getHTML = useCallback(() => {
     if (!editor) return '';
-    const html = editor.getHTML();
-    return html === '<p></p>' ? '' : html;
+    return normalizeEditorHtml(editor.getHTML());
   }, [editor]);
 
   const getJSON = useCallback(() => {
@@ -159,7 +220,12 @@ export function useRichTextEditor(options: UseRichTextEditorOptions = {}): UseRi
   const setContent = useCallback(
     (content: string | JSONContent, emitUpdate = true) => {
       if (!editor) return;
-      editor.commands.setContent(content, { emitUpdate });
+      withLiftedCharacterLimit(editor, () => {
+        editor.commands.setContent(content, { emitUpdate });
+      });
+      if (typeof content === 'string') {
+        latestHtmlRef.current = normalizeEditorHtml(content);
+      }
     },
     [editor]
   );
@@ -168,6 +234,7 @@ export function useRichTextEditor(options: UseRichTextEditorOptions = {}): UseRi
     (emitUpdate = true) => {
       if (!editor) return;
       editor.commands.clearContent(emitUpdate);
+      latestHtmlRef.current = '';
     },
     [editor]
   );
@@ -175,7 +242,7 @@ export function useRichTextEditor(options: UseRichTextEditorOptions = {}): UseRi
   const focus = useCallback(
     (position: 'start' | 'end' | 'all' | number | boolean = true) => {
       if (!editor) return;
-      editor.commands.focus(position as any);
+      editor.commands.focus(position as never);
     },
     [editor]
   );
@@ -204,33 +271,14 @@ export function useRichTextEditor(options: UseRichTextEditorOptions = {}): UseRi
       alignment?: 'left' | 'center' | 'right' | 'inline';
     }) => {
       if (!editor) return false;
-      return (editor.commands as any).setImage(imgOptions);
+      return editor.commands.setImage(imgOptions);
     },
     [editor]
   );
 
   const insertLink = useCallback(
-    ({ href, target = '_blank', text }: { href: string; target?: string; text?: string }) => {
-      if (!editor) return false;
-
-      if (!href) {
-        return editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      }
-
-      if (text && editor.state.selection.empty) {
-        return editor
-          .chain()
-          .focus()
-          .insertContent(`<a href="${href}" target="${target}">${text}</a>`)
-          .run();
-      }
-
-      return editor
-        .chain()
-        .focus()
-        .extendMarkRange('link')
-        .setLink({ href, target })
-        .run();
+    (linkOptions: { href: string; target?: string; text?: string }) => {
+      return applyEditorLink(editor, linkOptions);
     },
     [editor]
   );

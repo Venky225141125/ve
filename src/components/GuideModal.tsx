@@ -31,9 +31,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
 
   const SNIPPETS = {
     install: `npm install ve
-# or copy ./src/ve into your project and configure tsconfig / vite / next paths`,
+# peer: react and react-dom >= 18`,
     quickstart: `import React, { useState, useRef } from 'react';
 import { RichTextEditor, type RichTextEditorRef } from 've';
+import 've/styles.css';
 
 export function MyEditor() {
   const [content, setContent] = useState('<p>Welcome to <strong>VE</strong>!</p>');
@@ -57,22 +58,23 @@ export function MyEditor() {
 'use client';
 
 import dynamic from 'next/dynamic';
+import 've/styles.css';
 
-// VE is optimized with immediatelyRender: false, but for SSR safety in Next.js:
 const RichTextEditor = dynamic(
   () => import('ve').then((mod) => mod.RichTextEditor),
-  { ssr: false, loading: () => <div className="p-8 text-center text-slate-400">Loading VE Editor...</div> }
+  { ssr: false, loading: () => <div>Loading editor…</div> }
 );
 
 export default function Page() {
   return (
-    <main className="container mx-auto py-8">
+    <main>
       <RichTextEditor defaultValue="<h1>Next.js + VE</h1><p>Ready to edit!</p>" />
     </main>
   );
 }`,
     hookUsage: `import React from 'react';
 import { useRichTextEditor, EditorToolbar } from 've';
+import 've/styles.css';
 
 export function HeadlessEditor() {
   const { editor, getHTML, characterCount, wordCount } = useRichTextEditor({

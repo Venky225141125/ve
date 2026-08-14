@@ -85,7 +85,7 @@ export function createEditorExtensions(options: CreateExtensionsOptions = {}): A
   }
 
   if (features.textColor !== false) {
-    exts.push(Color);
+    exts.push(Color.configure({ types: ['textStyle'] }));
   }
 
   if (features.highlight !== false) {
@@ -213,11 +213,16 @@ export function createEditorExtensions(options: CreateExtensionsOptions = {}): A
     );
   }
 
-  // Character Count
-  if (features.characterCount !== false || maxCharacters) {
+  // Character Count — always register so the limit can be updated live
+  // without remounting the editor. autoTrim is off so enabling a limit
+  // does not silently delete existing document content from the start.
+  if (features.characterCount !== false) {
+    const featureLimit =
+      typeof features.characterCount === 'object' ? features.characterCount.limit : undefined;
     exts.push(
       CharacterCount.configure({
-        limit: maxCharacters,
+        limit: maxCharacters ?? featureLimit ?? null,
+        autoTrim: false,
       })
     );
   }

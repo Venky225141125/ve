@@ -4,17 +4,20 @@ import tailwindcss from '@tailwindcss/vite';
 import dts from 'vite-plugin-dts';
 import path from 'path';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     tailwindcss(),
-    dts({
-      include: ['src/ve/**/*.ts', 'src/ve/**/*.tsx'],
-      outDir: 'dist',
-      tsconfigPath: './tsconfig.json',
-      rollupTypes: true,
-    }),
-  ],
+    command === 'build'
+      ? dts({
+          include: ['src/ve/**/*.ts', 'src/ve/**/*.tsx'],
+          exclude: ['src/ve/**/*.css'],
+          outDir: 'dist',
+          tsconfigPath: './tsconfig.json',
+          rollupTypes: true,
+        })
+      : null,
+  ].filter(Boolean),
   resolve: {
     alias: {
       ve: path.resolve(__dirname, './src/ve'),
@@ -32,37 +35,30 @@ export default defineConfig({
       fileName: 'index',
       formats: ['es'],
     },
+    cssCodeSplit: false,
     rollupOptions: {
       external: [
         'react',
         'react-dom',
-        '@tiptap/core',
-        '@tiptap/react',
-        '@tiptap/starter-kit',
-        '@tiptap/extension-underline',
-        '@tiptap/extension-subscript',
-        '@tiptap/extension-superscript',
-        '@tiptap/extension-text-style',
-        '@tiptap/extension-color',
-        '@tiptap/extension-highlight',
-        '@tiptap/extension-font-family',
-        '@tiptap/extension-text-align',
-        '@tiptap/extension-task-list',
-        '@tiptap/extension-task-item',
-        '@tiptap/extension-link',
-        '@tiptap/extension-table',
-        '@tiptap/extension-table-row',
-        '@tiptap/extension-table-header',
-        '@tiptap/extension-table-cell',
-        '@tiptap/extension-youtube',
-        '@tiptap/extension-character-count',
-        '@tiptap/extension-placeholder',
-        '@tiptap/extension-image',
-        'dompurify',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        /^@tiptap\//,
         'lucide-react',
-        'motion',
+        'dompurify',
       ],
+      output: {
+        banner: `import './styles.css';\n`,
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+            return 'styles.css';
+          }
+          return assetInfo.name || 'asset[extname]';
+        },
+        globals: {
+          react: 'React',
+          'react-dom': 'ReactDOM',
+        },
+      },
     },
   },
-});
-
+}));

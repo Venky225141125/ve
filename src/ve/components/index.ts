@@ -3,6 +3,7 @@ export * from './EditorToolbar';
 export * from './ToolbarButton';
 export * from './ToolbarDropdown';
 export * from './ColorPickerPopover';
+export * from './FontSizePicker';
 export * from './EmojiPickerPopover';
 export * from './LinkModal';
 export * from './ImageModal';

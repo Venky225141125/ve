@@ -4,6 +4,7 @@ import React, {
   forwardRef,
   useRef,
   useCallback,
+  useEffect,
 } from 'react';
 import { EditorContent } from '@tiptap/react';
 import { useRichTextEditor } from '../hooks/useRichTextEditor';
@@ -12,6 +13,7 @@ import { EditorBubbleMenu } from './BubbleMenu';
 import { EditorStats } from './EditorStats';
 import { HTMLCodeEditor } from './HTMLCodeEditor';
 import { buildThemeStyles } from '../utils/theme';
+import { sanitizeHTML } from '../utils/serialization';
 import type { RichTextEditorProps, RichTextEditorRef } from '../types/editor';
 
 export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
@@ -44,12 +46,10 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       onBlur,
     } = props;
 
-    // Fullscreen and Source Code state
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isSourceCodeView, setIsSourceCodeView] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Initialize core editor logic hook
     const editorState = useRichTextEditor({
       value,
       defaultValue,
@@ -83,7 +83,6 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       readingTime,
     } = editorState;
 
-    // Expose ref API to parent components
     useImperativeHandle(
       ref,
       (): RichTextEditorRef => ({
@@ -112,14 +111,22 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
 
     const handleApplySourceCode = useCallback(
       (newHtml: string) => {
-        if (editor) {
-          editor.commands.setContent(newHtml, { emitUpdate: true });
-        }
+        setContent(sanitizeHTML(newHtml), true);
       },
-      [editor]
+      [setContent]
     );
 
-    // Dynamic style computation for theme CSS variables
+    useEffect(() => {
+      if (!isFullscreen) return;
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setIsFullscreen(false);
+        }
+      };
+      window.addEventListener('keydown', onKeyDown);
+      return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isFullscreen]);
+
     const themeStyles = buildThemeStyles(theme);
 
     return (
@@ -129,27 +136,10 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
         role="region"
         aria-label={ariaLabel}
         style={themeStyles}
-        className={`
-          rich-text-editor-container
-          relative flex flex-col w-full
-          bg-[var(--rte-background,#ffffff)] dark:bg-[var(--rte-background,#0f172a)]
-          border border-slate-200 dark:border-slate-800
-          text-slate-900 dark:text-slate-100
-          rounded-xl shadow-xs transition-all duration-200
-          ${isFullscreen ? 'fixed inset-0 z-50 rounded-none h-screen max-h-screen overflow-hidden' : ''}
-          ${className}
-        `}
+        className={`rte-root ${isFullscreen ? 'rte-fullscreen' : ''} ${className}`.trim()}
       >
-        {/* Sticky/Static Toolbar */}
         {toolbar !== false && (
-          <div
-            className={`
-              rte-toolbar-wrapper
-              ${stickyToolbar ? 'sticky top-0 z-20' : ''}
-              ${isFullscreen ? 'top-0' : ''}
-              ${toolbarClassName}
-            `}
-          >
+          <div className={`rte-toolbar-wrapper ${stickyToolbar ? 'rte-sticky' : ''} ${toolbarClassName}`.trim()}>
             {renderToolbar ? (
               renderToolbar({
                 editor,
@@ -174,18 +164,16 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           </div>
         )}
 
-        {/* Bubble Menu on Selection */}
         {bubbleMenu && editable && !isSourceCodeView && editor && (
-          <EditorBubbleMenu editor={editor} />
+          <EditorBubbleMenu
+            editor={editor}
+            onOpenLinkModal={() => {
+              window.dispatchEvent(new CustomEvent('ve:open-link-modal', { detail: editor }));
+            }}
+          />
         )}
 
-        {/* Editor Body */}
-        <div
-          className={`
-            rte-body-wrapper flex-1 overflow-y-auto min-h-[180px]
-            ${isFullscreen ? 'max-h-[calc(100vh-80px)]' : ''}
-          `}
-        >
+        <div className="rte-body">
           {isSourceCodeView ? (
             <HTMLCodeEditor
               html={getHTML()}
@@ -193,18 +181,10 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
               onClose={() => setIsSourceCodeView(false)}
             />
           ) : (
-            <EditorContent
-              editor={editor}
-              className={`
-                rte-editor-content
-                h-full text-slate-800 dark:text-slate-200
-                ${contentClassName}
-              `}
-            />
+            <EditorContent editor={editor} className={`rte-editor-content ${contentClassName}`.trim()} />
           )}
         </div>
 
-        {/* Bottom Status & Count Bar */}
         {showStats && (
           <EditorStats
             wordCount={wordCount}

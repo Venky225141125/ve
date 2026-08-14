@@ -1,6 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Smile } from 'lucide-react';
 import type { Editor } from '@tiptap/core';
+import { useAnchoredPopover } from '../hooks/useAnchoredPopover';
 
 export interface EmojiPickerPopoverProps {
   editor: Editor | null;
@@ -9,97 +11,99 @@ export interface EmojiPickerPopoverProps {
 
 const EMOJI_CATEGORIES: Record<string, string[]> = {
   'Frequently Used': ['😀', '😍', '🎉', '🚀', '🔥', '💡', '✅', '⭐', '👍', '❤️', '✨', '👏'],
-  'Smiles & People': ['😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '😉', '😌', '😍', '🥰', '😘', '😋', '😛', '🤔', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕'],
-  'Gestures & Hands': ['👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👋', '🤚', '🖐️', '✋', '🖖', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️'],
-  'Objects & Symbols': ['💡', '🔥', '✨', '⭐', '🌟', '💥', '⚡', '🎉', '🎊', '🎈', '🎁', '🏆', '🥇', '🥈', '🥉', '🎯', '🚀', '📌', '📍', '📎', '🔒', '🔑', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💯', '💢', '💬', '🔔', '📢', '⚠️', '⛔', '🚫', '✅', '❌', '❓', '❗'],
-  'Nature & Tech': ['💻', '📱', '⌨️', '🖥️', '💾', '💿', '📸', '🎧', '⚡', '☀️', '🌙', '⭐', '☁️', '🌧️', '❄️', '🌈', '🌲', '🌴', '🌱', '🌿', '☘️', '🍀', '☕', '🍕', '🍔', '🍟', '🍣', '🍰', '🍻'],
+  'Smiles & People': [
+    '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '😉', '😌', '😍', '🥰', '😘',
+    '😋', '😛', '🤔', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😔', '😪', '🤤',
+    '😴', '😷', '🤒', '🤕',
+  ],
+  'Gestures & Hands': [
+    '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👋', '🤚',
+    '🖐️', '✋', '🖖', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️',
+  ],
+  'Objects & Symbols': [
+    '💡', '🔥', '✨', '⭐', '🌟', '💥', '⚡', '🎉', '🎊', '🎈', '🎁', '🏆', '🥇', '🎯', '🚀',
+    '📌', '📍', '📎', '🔒', '🔑', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💯', '💬',
+    '🔔', '📢', '⚠️', '⛔', '🚫', '✅', '❌', '❓', '❗',
+  ],
+  'Nature & Tech': [
+    '💻', '📱', '⌨️', '🖥️', '💾', '📸', '🎧', '☀️', '🌙', '☁️', '🌧️', '❄️', '🌈', '🌲', '🌴',
+    '🌱', '🌿', '☘️', '🍀', '☕', '🍕', '🍔', '🍟', '🍣', '🍰', '🍻',
+  ],
 };
 
 export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
   editor,
   isDisabled = false,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const { triggerRef, popoverRef, isOpen, setIsOpen, coords, themeStyle, isDark, keepEditorSelection } =
+    useAnchoredPopover();
   const [search, setSearch] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
 
   const insertEmoji = (emoji: string) => {
     if (!editor) return;
     editor.chain().focus().insertContent(emoji).run();
     setIsOpen(false);
+    setSearch('');
   };
 
   return (
-    <div ref={containerRef} className="relative inline-block">
+    <div ref={triggerRef} className="rte-dropdown">
       <button
         type="button"
         disabled={isDisabled}
         title="Insert Emoji"
         aria-label="Insert Emoji"
         aria-expanded={isOpen}
+        onMouseDown={(e) => e.preventDefault()}
         onClick={(e) => {
           e.preventDefault();
           if (!isDisabled) setIsOpen(!isOpen);
         }}
-        className={`
-          relative inline-flex items-center justify-center p-1.5 min-w-[32px] min-h-[32px] rounded text-sm transition-colors
-          focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rte-primary,#3b82f6)]
-          ${
-            isDisabled
-              ? 'opacity-40 cursor-not-allowed text-slate-400'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }
-        `}
+        className={`rte-btn ${isOpen ? 'is-active' : ''}`}
       >
-        <Smile className="w-4 h-4" />
+        <Smile size={16} />
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 mt-1.5 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl w-72 max-h-80 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
-          <div className="mb-2">
+      {isOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className={`rte-popover${isDark ? ' dark' : ''}`}
+            style={{
+              position: 'fixed',
+              top: coords.top,
+              left: coords.left,
+              zIndex: 200,
+              width: 288,
+              maxHeight: 320,
+              ...themeStyle,
+            }}
+            onMouseDown={keepEditorSelection}
+          >
             <input
               type="text"
               placeholder="Search emojis..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-2.5 py-1 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[var(--rte-primary,#3b82f6)]"
+              className="rte-input"
+              style={{ marginBottom: 8 }}
             />
-          </div>
-
-          <div className="space-y-3">
             {Object.entries(EMOJI_CATEGORIES).map(([cat, emojis]) => {
-              const filtered = search
-                ? emojis.filter((e) => e.includes(search))
-                : emojis;
-
+              const filtered = search ? emojis.filter((e) => e.includes(search)) : emojis;
               if (filtered.length === 0) return null;
-
               return (
-                <div key={cat}>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+                <div key={cat} style={{ marginBottom: 12 }}>
+                  <div className="rte-muted" style={{ textAlign: 'left', marginBottom: 6 }}>
                     {cat}
                   </div>
-                  <div className="grid grid-cols-6 gap-1">
+                  <div className="rte-emoji-grid">
                     {filtered.map((em, idx) => (
                       <button
                         key={`${em}-${idx}`}
                         type="button"
                         onClick={() => insertEmoji(em)}
-                        className="text-lg p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-transform hover:scale-125 focus:outline-none"
+                        className="rte-emoji-btn"
                       >
                         {em}
                       </button>
@@ -108,9 +112,9 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

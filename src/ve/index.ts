@@ -1,3 +1,5 @@
+import './styles.css';
+
 // Main Component
 export * from './components/RichTextEditor';
 export { RichTextEditor as default } from './components/RichTextEditor';

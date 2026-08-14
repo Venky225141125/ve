@@ -1,17 +1,20 @@
 # VE Rich Text Editor
 
-A reusable, production-ready rich text editor for React apps, built with Tiptap and designed to work as a component package for both web apps and Next.js projects.
+A drop-in rich text editor for React and Next.js — the same idea as ReactQuill, with a modern Tiptap engine.
 
-## Features
+```tsx
+import { RichTextEditor } from 've';
+import 've/styles.css';
 
-- Modular editor architecture
-- Rich text formatting tools
-- Links, images, tables, YouTube embeds, and task lists
-- Custom toolbar configuration
-- Theme customization
-- Controlled or uncontrolled usage
-- Ref-based editor API for programmatic control
-- Reusable exports for components, hooks, utils, extensions, and types
+export function App() {
+  return (
+    <RichTextEditor
+      defaultValue="<p>Hello from VE</p>"
+      onChange={(html) => console.log(html)}
+    />
+  );
+}
+```
 
 ## Install
 
@@ -19,25 +22,94 @@ A reusable, production-ready rich text editor for React apps, built with Tiptap 
 npm install ve
 ```
 
-## Basic usage
+`react` and `react-dom` (>= 18) are peer dependencies.
+
+Styles ship with the package. Import them once in your app:
 
 ```tsx
-import React, { useRef } from 'react';
-import { RichTextEditor, type RichTextEditorRef } from 've';
+import 've/styles.css';
+```
 
-export default function Example() {
-  const editorRef = useRef<RichTextEditorRef>(null);
+The component also imports styles from the main entry, so a single `import { RichTextEditor } from 've'` is enough in most bundlers.
 
-  return (
-    <RichTextEditor
-      ref={editorRef}
-      defaultValue="<p>Hello from VE</p>"
-      onChange={(html) => console.log('Updated:', html)}
-      placeholder="Write something amazing..."
-    />
-  );
+## Usage
+
+### Controlled (ReactQuill-style)
+
+```tsx
+import { useState } from 'react';
+import { RichTextEditor } from 've';
+import 've/styles.css';
+
+export default function Editor() {
+  const [value, setValue] = useState('<p>Start writing…</p>');
+
+  return <RichTextEditor value={value} onChange={setValue} />;
 }
 ```
+
+### Uncontrolled
+
+```tsx
+<RichTextEditor
+  defaultValue="<p>Hello</p>"
+  onChange={(html) => console.log(html)}
+/>
+```
+
+### Ref API
+
+```tsx
+import { useRef } from 'react';
+import { RichTextEditor, type RichTextEditorRef } from 've';
+
+const editorRef = useRef<RichTextEditorRef>(null);
+
+editorRef.current?.getHTML();
+editorRef.current?.getJSON();
+editorRef.current?.getText();
+editorRef.current?.setContent('<p>Replaced</p>');
+editorRef.current?.clearContent();
+editorRef.current?.undo();
+editorRef.current?.focus();
+```
+
+### Next.js App Router
+
+```tsx
+'use client';
+
+import dynamic from 'next/dynamic';
+import 've/styles.css';
+
+const RichTextEditor = dynamic(
+  () => import('ve').then((mod) => mod.RichTextEditor),
+  { ssr: false }
+);
+
+export default function Page() {
+  return <RichTextEditor defaultValue="<p>Ready</p>" />;
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `value` | `string` | — | Controlled HTML |
+| `defaultValue` | `string` | `''` | Uncontrolled initial HTML |
+| `onChange` | `(html: string) => void` | — | Fires on every edit |
+| `onChangeValue` | `(value: { html, json, text }) => void` | — | Structured output |
+| `editable` | `boolean` | `true` | Read-only when `false` |
+| `placeholder` | `string` | `'Start writing...'` | Empty-state text |
+| `features` | `RichTextEditorFeatures` | all on | Toggle headings, tables, images, etc. |
+| `toolbar` | `ToolbarConfig \| false` | full toolbar | Custom item list, or hide |
+| `theme` | `RichTextEditorTheme` | — | CSS variable overrides |
+| `onImageUpload` | `(file: File) => Promise<string>` | base64 fallback | Upload handler |
+| `maxCharacters` | `number` | — | Character limit |
+| `showStats` | `boolean` | `true` | Word / character bar |
+| `stickyToolbar` | `boolean` | `true` | Pin toolbar |
+| `bubbleMenu` | `boolean` | `true` | Selection formatting bar |
 
 ## Local development
 

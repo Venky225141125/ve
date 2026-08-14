@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { Editor } from '@tiptap/core';
 import {
   Undo,
@@ -41,6 +41,7 @@ import {
 import { ToolbarButton } from './ToolbarButton';
 import { ToolbarDropdown } from './ToolbarDropdown';
 import { ColorPickerPopover } from './ColorPickerPopover';
+import { FontSizePicker } from './FontSizePicker';
 import { TableBuilderModal } from './TableBuilderModal';
 import { EmojiPickerPopover } from './EmojiPickerPopover';
 import { LinkModal } from './LinkModal';
@@ -52,7 +53,10 @@ import {
   TEXT_COLORS,
   HIGHLIGHT_COLORS,
   DEFAULT_TOOLBAR_ITEMS,
+  isToolbarItemEnabled,
+  collapseToolbarSeparators,
 } from '../utils/constants';
+import { applyEditorLink } from '../utils/links';
 import type { ToolbarConfig, ToolbarItem, CustomToolbarItem } from '../types/toolbar';
 import type { RichTextEditorFeatures } from '../types/features';
 import type { ImageUploadHandler } from '../types/editor';
@@ -82,17 +86,30 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   className = '',
   disabled = false,
 }) => {
-  // Modal states
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isYoutubeModalOpen, setIsYoutubeModalOpen] = useState(false);
 
+  useEffect(() => {
+    const openLink = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (disabled) return;
+      if (detail && detail !== editor) return;
+      setIsLinkModalOpen(true);
+    };
+    window.addEventListener('ve:open-link-modal', openLink);
+    return () => window.removeEventListener('ve:open-link-modal', openLink);
+  }, [disabled, editor]);
+
   if (toolbar === false || !editor) return null;
 
-  // Flatten or use items array
-  const toolbarItems = (Array.isArray(toolbar)
+  const rawItems = (Array.isArray(toolbar)
     ? toolbar.flat()
     : DEFAULT_TOOLBAR_ITEMS) as ToolbarItem[];
+
+  const toolbarItems = collapseToolbarSeparators(
+    rawItems.filter((item) => isToolbarItemEnabled(item, features as Record<string, unknown>))
+  );
 
   // Current states
   const isMac = typeof window !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
@@ -100,13 +117,13 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
   // Heading options
   const headingOptions = [
-    { label: 'Paragraph', value: 'p', icon: <Pilcrow className="w-3.5 h-3.5" /> },
-    { label: 'Heading 1', value: 'h1', icon: <Heading1 className="w-3.5 h-3.5" /> },
-    { label: 'Heading 2', value: 'h2', icon: <Heading2 className="w-3.5 h-3.5" /> },
-    { label: 'Heading 3', value: 'h3', icon: <Heading3 className="w-3.5 h-3.5" /> },
-    { label: 'Heading 4', value: 'h4', icon: <Heading4 className="w-3.5 h-3.5" /> },
-    { label: 'Heading 5', value: 'h5', icon: <Heading5 className="w-3.5 h-3.5" /> },
-    { label: 'Heading 6', value: 'h6', icon: <Heading6 className="w-3.5 h-3.5" /> },
+    { label: 'Paragraph', value: 'p', icon: <Pilcrow size={14} /> },
+    { label: 'Heading 1', value: 'h1', icon: <Heading1 size={14} /> },
+    { label: 'Heading 2', value: 'h2', icon: <Heading2 size={14} /> },
+    { label: 'Heading 3', value: 'h3', icon: <Heading3 size={14} /> },
+    { label: 'Heading 4', value: 'h4', icon: <Heading4 size={14} /> },
+    { label: 'Heading 5', value: 'h5', icon: <Heading5 size={14} /> },
+    { label: 'Heading 6', value: 'h6', icon: <Heading6 size={14} /> },
   ];
 
   let currentHeadingValue = 'p';
@@ -119,10 +136,10 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
   // Alignment Options
   const alignOptions = [
-    { label: 'Left', value: 'left', icon: <AlignLeft className="w-3.5 h-3.5" /> },
-    { label: 'Center', value: 'center', icon: <AlignCenter className="w-3.5 h-3.5" /> },
-    { label: 'Right', value: 'right', icon: <AlignRight className="w-3.5 h-3.5" /> },
-    { label: 'Justify', value: 'justify', icon: <AlignJustify className="w-3.5 h-3.5" /> },
+    { label: 'Left', value: 'left', icon: <AlignLeft size={14} /> },
+    { label: 'Center', value: 'center', icon: <AlignCenter size={14} /> },
+    { label: 'Right', value: 'right', icon: <AlignRight size={14} /> },
+    { label: 'Justify', value: 'justify', icon: <AlignJustify size={14} /> },
   ];
 
   let currentAlignValue = 'left';
@@ -133,8 +150,8 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   // Current Font
   const currentFontFamily = editor.getAttributes('textStyle').fontFamily || 'inherit';
   const currentFontSize = editor.getAttributes('textStyle').fontSize || '16px';
-  const currentTextColor = editor.getAttributes('textStyle').color || '#000000';
-  const currentHighlightColor = editor.getAttributes('highlight').color || 'transparent';
+  const currentTextColor = editor.getAttributes('textStyle').color || '';
+  const currentHighlightColor = editor.getAttributes('highlight').color || '';
 
   // Font options config
   const fontFamilies =
@@ -176,12 +193,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
     switch (item) {
       case '|':
-        return (
-          <span
-            key={`sep-${index}`}
-            className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1 self-center shrink-0"
-          />
-        );
+        return <span key={`sep-${index}`} className="rte-sep" />;
 
       case 'undo':
         return (
@@ -189,7 +201,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="undo"
             label="Undo"
             shortcut={`${modKey}Z`}
-            icon={<Undo className="w-4 h-4" />}
+            icon={<Undo size={16} />}
             isDisabled={disabled || !editor.can().undo()}
             onClick={() => editor.chain().focus().undo().run()}
           />
@@ -201,7 +213,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="redo"
             label="Redo"
             shortcut={`${modKey}Shift+Z`}
-            icon={<Redo className="w-4 h-4" />}
+            icon={<Redo size={16} />}
             isDisabled={disabled || !editor.can().redo()}
             onClick={() => editor.chain().focus().redo().run()}
           />
@@ -250,16 +262,16 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       case 'fontSize':
         return (
-          <ToolbarDropdown
+          <FontSizePicker
             key="fontSize"
-            label="Font Size"
-            tooltip="Change text size"
             value={currentFontSize}
             options={fontSizes}
-            minWidth="90px"
             isDisabled={disabled}
             onChange={(val) => {
               editor.chain().focus().setFontSize(val).run();
+            }}
+            onClear={() => {
+              editor.chain().focus().unsetFontSize().run();
             }}
           />
         );
@@ -270,7 +282,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="bold"
             label="Bold"
             shortcut={`${modKey}B`}
-            icon={<Bold className="w-4 h-4" />}
+            icon={<Bold size={16} />}
             isActive={editor.isActive('bold')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleBold().run()}
@@ -283,7 +295,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="italic"
             label="Italic"
             shortcut={`${modKey}I`}
-            icon={<Italic className="w-4 h-4" />}
+            icon={<Italic size={16} />}
             isActive={editor.isActive('italic')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleItalic().run()}
@@ -296,7 +308,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="underline"
             label="Underline"
             shortcut={`${modKey}U`}
-            icon={<UnderlineIcon className="w-4 h-4" />}
+            icon={<UnderlineIcon size={16} />}
             isActive={editor.isActive('underline')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleUnderline().run()}
@@ -309,7 +321,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="strike"
             label="Strikethrough"
             shortcut={`${modKey}Shift+X`}
-            icon={<Strikethrough className="w-4 h-4" />}
+            icon={<Strikethrough size={16} />}
             isActive={editor.isActive('strike')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleStrike().run()}
@@ -322,7 +334,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="code"
             label="Inline Code"
             shortcut={`${modKey}E`}
-            icon={<Code className="w-4 h-4" />}
+            icon={<Code size={16} />}
             isActive={editor.isActive('code')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleCode().run()}
@@ -335,7 +347,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="superscript"
             label="Superscript"
             shortcut={`${modKey}.`}
-            icon={<SuperscriptIcon className="w-4 h-4" />}
+            icon={<SuperscriptIcon size={16} />}
             isActive={editor.isActive('superscript')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleSuperscript().run()}
@@ -348,7 +360,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="subscript"
             label="Subscript"
             shortcut={`${modKey},`}
-            icon={<SubscriptIcon className="w-4 h-4" />}
+            icon={<SubscriptIcon size={16} />}
             isActive={editor.isActive('subscript')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleSubscript().run()}
@@ -361,7 +373,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="clearFormatting"
             label="Clear Formatting"
             tooltip="Remove styles and formatting"
-            icon={<RemoveFormatting className="w-4 h-4" />}
+            icon={<RemoveFormatting size={16} />}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
           />
@@ -373,7 +385,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="textColor"
             label="Text Color"
             tooltip="Change text color"
-            icon={<Baseline className="w-4 h-4" />}
+            icon={<Baseline size={16} />}
             activeColor={currentTextColor}
             colors={textColors}
             isDisabled={disabled}
@@ -388,7 +400,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="highlight"
             label="Highlight Color"
             tooltip="Text highlight background"
-            icon={<Highlighter className="w-4 h-4" />}
+            icon={<Highlighter size={16} />}
             activeColor={currentHighlightColor}
             colors={highlightColors}
             isDisabled={disabled}
@@ -418,7 +430,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <ToolbarButton
             key="alignLeft"
             label="Align Left"
-            icon={<AlignLeft className="w-4 h-4" />}
+            icon={<AlignLeft size={16} />}
             isActive={editor.isActive({ textAlign: 'left' })}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().setTextAlign('left').run()}
@@ -430,7 +442,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <ToolbarButton
             key="alignCenter"
             label="Align Center"
-            icon={<AlignCenter className="w-4 h-4" />}
+            icon={<AlignCenter size={16} />}
             isActive={editor.isActive({ textAlign: 'center' })}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
@@ -442,7 +454,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <ToolbarButton
             key="alignRight"
             label="Align Right"
-            icon={<AlignRight className="w-4 h-4" />}
+            icon={<AlignRight size={16} />}
             isActive={editor.isActive({ textAlign: 'right' })}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
@@ -454,7 +466,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <ToolbarButton
             key="alignJustify"
             label="Justify"
-            icon={<AlignJustify className="w-4 h-4" />}
+            icon={<AlignJustify size={16} />}
             isActive={editor.isActive({ textAlign: 'justify' })}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().setTextAlign('justify').run()}
@@ -467,7 +479,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="bulletList"
             label="Bullet List"
             shortcut={`${modKey}Shift+8`}
-            icon={<List className="w-4 h-4" />}
+            icon={<List size={16} />}
             isActive={editor.isActive('bulletList')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -480,7 +492,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="orderedList"
             label="Numbered List"
             shortcut={`${modKey}Shift+7`}
-            icon={<ListOrdered className="w-4 h-4" />}
+            icon={<ListOrdered size={16} />}
             isActive={editor.isActive('orderedList')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
@@ -493,7 +505,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="taskList"
             label="Task List"
             shortcut={`${modKey}Shift+9`}
-            icon={<ListTodo className="w-4 h-4" />}
+            icon={<ListTodo size={16} />}
             isActive={editor.isActive('taskList')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleTaskList().run()}
@@ -506,7 +518,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="blockquote"
             label="Blockquote"
             shortcut={`${modKey}Shift+B`}
-            icon={<Quote className="w-4 h-4" />}
+            icon={<Quote size={16} />}
             isActive={editor.isActive('blockquote')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
@@ -519,7 +531,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="codeBlock"
             label="Code Block"
             shortcut={`${modKey}Alt+C`}
-            icon={<Code2 className="w-4 h-4" />}
+            icon={<Code2 size={16} />}
             isActive={editor.isActive('codeBlock')}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
@@ -532,7 +544,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="horizontalRule"
             label="Divider"
             tooltip="Insert horizontal divider"
-            icon={<Minus className="w-4 h-4" />}
+            icon={<Minus size={16} />}
             isDisabled={disabled}
             onClick={() => editor.chain().focus().setHorizontalRule().run()}
           />
@@ -544,7 +556,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="link"
             label="Link"
             shortcut={`${modKey}K`}
-            icon={<LinkIcon className="w-4 h-4" />}
+            icon={<LinkIcon size={16} />}
             isActive={editor.isActive('link')}
             isDisabled={disabled}
             onClick={() => setIsLinkModalOpen(true)}
@@ -557,7 +569,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="image"
             label="Image"
             tooltip="Insert or upload image"
-            icon={<ImageIcon className="w-4 h-4" />}
+            icon={<ImageIcon size={16} />}
             isDisabled={disabled}
             onClick={() => setIsImageModalOpen(true)}
           />
@@ -572,7 +584,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="youtube"
             label="YouTube Video"
             tooltip="Embed YouTube video"
-            icon={<YoutubeIcon className="w-4 h-4" />}
+            icon={<YoutubeIcon size={16} />}
             isDisabled={disabled}
             onClick={() => setIsYoutubeModalOpen(true)}
           />
@@ -587,7 +599,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="fullscreen"
             label={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
             tooltip={isFullscreen ? 'Exit fullscreen mode' : 'Expand to fullscreen'}
-            icon={isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            icon={isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
             isActive={isFullscreen}
             isDisabled={disabled}
             onClick={onToggleFullscreen}
@@ -600,7 +612,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             key="sourceCode"
             label="HTML Source"
             tooltip="Toggle HTML source editor"
-            icon={<CodeXml className="w-4 h-4" />}
+            icon={<CodeXml size={16} />}
             isActive={isSourceCodeView}
             isDisabled={disabled}
             onClick={onToggleSourceCode}
@@ -620,30 +632,18 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <div
         role="toolbar"
         aria-label="Rich text editor toolbar"
-        className={`
-          flex flex-wrap items-center gap-1 p-2 border-b
-          border-slate-200 dark:border-slate-800 bg-[var(--rte-toolbar-background,theme(colors.slate.50/80%))] dark:bg-slate-900/90
-          backdrop-blur-xs transition-colors duration-150
-          ${className}
-        `}
+        className={`rte-toolbar ${className}`.trim()}
       >
         {toolbarItems.map((item, idx) => renderItem(item, idx))}
       </div>
 
-      {/* Link Dialog */}
       <LinkModal
         isOpen={isLinkModalOpen}
         initialHref={currentLinkHref}
         initialTarget={currentLinkTarget}
         onClose={() => setIsLinkModalOpen(false)}
         onSubmit={({ href, target, text }) => {
-          if (!href) {
-            editor.chain().focus().extendMarkRange('link').unsetLink().run();
-          } else if (text && editor.state.selection.empty) {
-            editor.chain().focus().insertContent(`<a href="${href}" target="${target}">${text}</a>`).run();
-          } else {
-            editor.chain().focus().extendMarkRange('link').setLink({ href, target }).run();
-          }
+          applyEditorLink(editor, { href, target, text });
         }}
         onRemove={() => {
           editor.chain().focus().extendMarkRange('link').unsetLink().run();
@@ -656,7 +656,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         onImageUpload={onImageUpload}
         onClose={() => setIsImageModalOpen(false)}
         onSubmit={(imgAttrs) => {
-          (editor.commands as any).setImage(imgAttrs);
+          editor.commands.setImage(imgAttrs);
         }}
       />
 

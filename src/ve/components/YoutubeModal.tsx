@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Youtube as YoutubeIcon, X } from 'lucide-react';
+import { ThemedPortal } from './ThemedPortal';
 
 export interface YoutubeModalProps {
   isOpen: boolean;
@@ -7,125 +8,114 @@ export interface YoutubeModalProps {
   onSubmit: (options: { src: string; width: number; height: number }) => void;
 }
 
-export const YoutubeModal: React.FC<YoutubeModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
-}) => {
+const YOUTUBE_PATTERN =
+  /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|shorts\/)|youtu\.be\/)[\w-]+/i;
+
+export const YoutubeModal: React.FC<YoutubeModalProps> = ({ isOpen, onClose, onSubmit }) => {
   const [url, setUrl] = useState('');
   const [width, setWidth] = useState(640);
   const [height, setHeight] = useState(360);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) {
+    const trimmed = url.trim();
+    if (!trimmed || !YOUTUBE_PATTERN.test(trimmed)) {
       setError('Please provide a valid YouTube URL');
       return;
     }
 
-    onSubmit({
-      src: url.trim(),
-      width,
-      height,
-    });
-
+    onSubmit({ src: trimmed, width, height });
     setUrl('');
     setError(null);
     onClose();
   };
 
   return (
-    <div
+    <ThemedPortal
+      open={isOpen}
       role="dialog"
       aria-modal="true"
       aria-labelledby="youtube-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="rte-overlay"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-semibold">
-            <YoutubeIcon className="w-4 h-4 text-red-600" />
-            <h2 id="youtube-modal-title" className="text-sm font-semibold">
-              Embed YouTube Video
-            </h2>
+      <div className="rte-modal">
+        <div className="rte-modal-header">
+          <div className="rte-modal-title">
+            <YoutubeIcon size={16} />
+            <h2 id="youtube-modal-title">Embed YouTube Video</h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close dialog"
-            className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-4 h-4" />
+          <button type="button" onClick={onClose} aria-label="Close dialog" className="rte-btn">
+            <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {error && (
-            <div className="p-2 text-xs bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/60 rounded text-red-600 dark:text-red-400">
-              {error}
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="rte-modal-body">
+          {error && <div className="rte-error">{error}</div>}
 
-          <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-              YouTube Video URL *
-            </label>
+          <div className="rte-field">
+            <label htmlFor="ve-youtube-url">YouTube Video URL *</label>
             <input
-              type="url"
+              id="ve-youtube-url"
+              type="text"
               required
               autoFocus
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://www.youtube.com/watch?v=..."
-              className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[var(--rte-primary,#3b82f6)]"
+              className="rte-input"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Width (px)
-              </label>
+          <div className="rte-grid-2">
+            <div className="rte-field">
+              <label htmlFor="ve-youtube-width">Width (px)</label>
               <input
+                id="ve-youtube-width"
                 type="number"
+                min={240}
                 value={width}
                 onChange={(e) => setWidth(Number(e.target.value))}
-                className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[var(--rte-primary,#3b82f6)]"
+                className="rte-input"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Height (px)
-              </label>
+            <div className="rte-field">
+              <label htmlFor="ve-youtube-height">Height (px)</label>
               <input
+                id="ve-youtube-height"
                 type="number"
+                min={135}
                 value={height}
                 onChange={(e) => setHeight(Number(e.target.value))}
-                className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[var(--rte-primary,#3b82f6)]"
+                className="rte-input"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-1.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-xs"
-            >
-              Embed Video
-            </button>
+          <div className="rte-modal-footer">
+            <div className="rte-actions">
+              <button type="button" onClick={onClose} className="rte-btn-ghost">
+                Cancel
+              </button>
+              <button type="submit" className="rte-btn-primary">
+                Embed Video
+              </button>
+            </div>
           </div>
         </form>
       </div>
-    </div>
+    </ThemedPortal>
   );
 };
