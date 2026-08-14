@@ -150,38 +150,58 @@ export function readEditorTheme(from?: Element | null): {
   };
 }
 
-/**
- * Maps RichTextEditorTheme configuration options to CSS Custom Properties.
- */
-export function buildThemeStyles(theme?: RichTextEditorTheme): CSSProperties {
-  if (!theme) return {};
+function assignVar(target: Record<string, string>, name: string, value?: string) {
+  if (value === undefined || value === null) return;
+  const trimmed = String(value).trim();
+  if (!trimmed) return;
+  target[name] = trimmed;
+}
 
-  const styleMap: Record<string, string | undefined> = {
-    '--rte-primary': theme.primaryColor,
-    '--rte-primary-hover': theme.primaryHoverColor,
-    '--rte-border': theme.borderColor,
-    '--rte-background': theme.backgroundColor,
-    '--rte-popover': theme.backgroundColor,
-    '--rte-popover-foreground': theme.textColor,
-    '--rte-toolbar-background': theme.toolbarBackground,
-    '--rte-text': theme.textColor,
-    '--rte-text-muted': theme.textMutedColor,
-    '--rte-placeholder': theme.placeholderColor,
-    '--rte-selection': theme.selectionColor,
-    '--rte-border-radius': theme.borderRadius,
-    '--rte-toolbar-height': theme.toolbarHeight,
-    '--rte-font-family': theme.fontFamily,
-    '--rte-font-size': theme.fontSize,
-    '--rte-line-height': theme.lineHeight,
-  };
+/**
+ * Maps theme tokens and extra CSS variables onto the editor root.
+ * Later sources win: named `theme` fields → `theme.cssVariables` → `cssVariables`.
+ */
+export function buildThemeStyles(
+  theme?: RichTextEditorTheme,
+  cssVariables?: Record<string, string>
+): CSSProperties {
+  if (!theme && !cssVariables) return {};
 
   const cssProperties: Record<string, string> = {};
 
-  Object.entries(styleMap).forEach(([prop, val]) => {
-    if (val !== undefined && val !== null && val.trim() !== '') {
-      cssProperties[prop] = val;
+  if (theme) {
+    assignVar(cssProperties, '--rte-primary', theme.primaryColor);
+    assignVar(cssProperties, '--rte-primary-hover', theme.primaryHoverColor);
+    assignVar(cssProperties, '--rte-primary-foreground', theme.primaryForegroundColor);
+    assignVar(cssProperties, '--rte-border', theme.borderColor);
+    assignVar(cssProperties, '--rte-input', theme.borderColor);
+    assignVar(cssProperties, '--rte-background', theme.backgroundColor);
+    assignVar(cssProperties, '--rte-popover', theme.popoverColor || theme.backgroundColor);
+    assignVar(cssProperties, '--rte-popover-foreground', theme.popoverForegroundColor || theme.textColor);
+    assignVar(cssProperties, '--rte-toolbar-background', theme.toolbarBackground);
+    assignVar(cssProperties, '--rte-text', theme.textColor);
+    assignVar(cssProperties, '--rte-control', theme.textColor);
+    assignVar(cssProperties, '--rte-text-muted', theme.textMutedColor);
+    assignVar(cssProperties, '--rte-placeholder', theme.placeholderColor || theme.textMutedColor);
+    assignVar(cssProperties, '--rte-selection', theme.selectionColor);
+    assignVar(cssProperties, '--rte-control-hover', theme.controlHoverColor);
+    assignVar(cssProperties, '--rte-muted', theme.toolbarBackground);
+    assignVar(cssProperties, '--rte-ring', theme.ringColor || theme.primaryColor);
+    assignVar(cssProperties, '--rte-danger', theme.dangerColor);
+    assignVar(cssProperties, '--rte-border-radius', theme.borderRadius);
+    assignVar(cssProperties, '--rte-toolbar-height', theme.toolbarHeight);
+    assignVar(cssProperties, '--rte-font-family', theme.fontFamily);
+    assignVar(cssProperties, '--rte-font-size', theme.fontSize);
+    assignVar(cssProperties, '--rte-line-height', theme.lineHeight);
+
+    if (theme.cssVariables) {
+      Object.entries(theme.cssVariables).forEach(([name, value]) => assignVar(cssProperties, name, value));
     }
-  });
+  }
+
+  if (cssVariables) {
+    Object.entries(cssVariables).forEach(([name, value]) => assignVar(cssProperties, name, value));
+  }
 
   return cssProperties as CSSProperties;
 }

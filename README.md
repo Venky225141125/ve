@@ -104,12 +104,44 @@ export default function Page() {
 | `placeholder` | `string` | `'Start writing...'` | Empty-state text |
 | `features` | `RichTextEditorFeatures` | all on | Toggle headings, tables, images, etc. |
 | `toolbar` | `ToolbarConfig \| false` | full toolbar | Custom item list, or hide |
-| `theme` | `RichTextEditorTheme` | — | CSS variable overrides |
+| `theme` | `RichTextEditorTheme` | — | Dynamic colors, fonts, radius (`--rte-*` vars) |
+| `style` | `CSSProperties` | — | Instance CSS (height, extra variables). Wins over `theme` |
+| `cssVariables` | `Record<string, string>` | — | Extra `--rte-*` (or any) CSS variables |
+| `dark` | `boolean` | — | Force dark chrome on this editor |
+| `className` | `string` | — | Class on the editor root |
 | `onImageUpload` | `(file: File) => Promise<string>` | base64 fallback | Upload handler |
 | `maxCharacters` | `number` | — | Character limit |
 | `showStats` | `boolean` | `true` | Word / character bar |
 | `stickyToolbar` | `boolean` | `true` | Pin toolbar |
 | `bubbleMenu` | `boolean` | `true` | Selection formatting bar |
+
+## Custom styles
+
+Pass a `theme` object, `cssVariables`, and/or `style`. Changing them in React state updates the editor immediately (role themes, dark mode, live preview).
+
+```tsx
+<RichTextEditor
+  value={html}
+  onChange={setHtml}
+  dark={isDark}
+  theme={{
+    primaryColor: '#2563eb',      // or '#7c3aed' for client, '#06b6d4' for user
+    primaryHoverColor: '#1d4ed8',
+    backgroundColor: '#ffffff',
+    popoverColor: '#ffffff',
+    borderColor: '#e2e8f0',
+    textColor: '#0f172a',
+    borderRadius: '0.625rem',
+  }}
+  cssVariables={{
+    '--rte-control-hover': '#eff6ff',
+  }}
+  style={{ minHeight: 280 }}
+  className="w-full"
+/>
+```
+
+Host CSS tokens (`--primary`, `--popover`, `--border`, `--radius`) are picked up automatically if you do not pass `theme`. `style` and `cssVariables` always win over those defaults.
 
 ## Local development
 

@@ -29,6 +29,9 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       toolbar,
       renderToolbar,
       theme,
+      style,
+      cssVariables,
+      dark,
       onImageUpload,
       maxCharacters,
       showStats = true,
@@ -127,7 +130,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       return () => window.removeEventListener('keydown', onKeyDown);
     }, [isFullscreen]);
 
-    const themeStyles = buildThemeStyles(theme);
+    const themeStyles = buildThemeStyles(theme, cssVariables);
 
     return (
       <div
@@ -135,8 +138,8 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
         id={id}
         role="region"
         aria-label={ariaLabel}
-        style={themeStyles}
-        className={`rte-root ${isFullscreen ? 'rte-fullscreen' : ''} ${className}`.trim()}
+        style={{ ...themeStyles, ...style }}
+        className={`rte-root ${dark ? 'dark' : ''} ${isFullscreen ? 'rte-fullscreen' : ''} ${className}`.trim()}
       >
         {toolbar !== false && (
           <div className={`rte-toolbar-wrapper ${stickyToolbar ? 'rte-sticky' : ''} ${toolbarClassName}`.trim()}>

@@ -401,6 +401,8 @@ ${featureLines ? featureLines + '\n' : ''}        }}
               features={features}
               toolbar={TOOLBAR_PRESETS[selectedToolbarKey].config}
               theme={THEME_PRESETS[selectedThemeKey].theme}
+              dark={isDarkMode}
+              style={{ minHeight: 420 }}
               onImageUpload={handleImageUpload}
               stickyToolbar={stickyToolbar}
               bubbleMenu={bubbleMenu}

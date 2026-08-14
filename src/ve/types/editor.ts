@@ -38,7 +38,23 @@ export interface RichTextEditorProps {
   features?: RichTextEditorFeatures;
   toolbar?: ToolbarConfig | false;
   renderToolbar?: (props: CustomToolbarProps) => ReactNode;
+  /**
+   * Named theme tokens. Safe to change at runtime (role theme, dark mode, etc).
+   * Maps onto `--rte-*` CSS variables on the editor root.
+   */
   theme?: RichTextEditorTheme;
+  /**
+   * Arbitrary CSS for this instance (height, CSS variables, etc).
+   * Merged after `theme`, so it wins on conflicts.
+   */
+  style?: CSSProperties;
+  /**
+   * Extra CSS variables without putting them inside `theme`.
+   * Example: `{ '--rte-primary': '#7c3aed' }`.
+   */
+  cssVariables?: Record<string, string>;
+  /** Force the editor chrome into dark tokens even if `html` is light. */
+  dark?: boolean;
   onImageUpload?: ImageUploadHandler;
   maxCharacters?: number;
   showStats?: boolean;

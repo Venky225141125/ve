@@ -93,15 +93,24 @@ export function HeadlessEditor() {
     customTheme: `import { RichTextEditor, type RichTextEditorTheme } from 've';
 
 const customTheme: RichTextEditorTheme = {
-  primaryColor: '#8b5cf6',
-  primaryHoverColor: '#7c3aed',
-  activeBackground: '#f5f3ff',
-  borderColor: '#e9d5ff',
+  primaryColor: '#7c3aed',
+  primaryHoverColor: '#6d28d9',
+  backgroundColor: '#ffffff',
+  popoverColor: '#ffffff',
+  borderColor: '#e2e8f0',
+  borderRadius: '0.625rem',
   fontFamily: 'Inter, system-ui, sans-serif',
-  borderRadius: '0.75rem',
+  cssVariables: {
+    '--rte-control-hover': '#f5f3ff',
+  },
 };
 
-<RichTextEditor theme={customTheme} />`,
+<RichTextEditor
+  theme={customTheme}
+  dark={isDark}
+  style={{ minHeight: 320 }}
+  cssVariables={{ '--rte-primary': role === 'client' ? '#7c3aed' : '#2563eb' }}
+/>`,
     testing: `# Run TypeScript linting & type checks
 npm run lint
 
