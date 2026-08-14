@@ -1,0 +1,125 @@
+{
+  "name": "ve",
+  "version": "0.1.0",
+  "description": "Production-ready rich text editor for React and Next.js, built for reuse across apps.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./components": {
+      "types": "./dist/components/index.d.ts",
+      "import": "./dist/components/index.js",
+      "default": "./dist/components/index.js"
+    },
+    "./hooks": {
+      "types": "./dist/hooks/index.d.ts",
+      "import": "./dist/hooks/index.js",
+      "default": "./dist/hooks/index.js"
+    },
+    "./extensions": {
+      "types": "./dist/extensions/index.d.ts",
+      "import": "./dist/extensions/index.js",
+      "default": "./dist/extensions/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js",
+      "default": "./dist/types/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js",
+      "default": "./dist/utils/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "clean": "rm -rf dist",
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "lint": "tsc --noEmit",
+    "test": "tsc --noEmit",
+    "preview": "vite preview",
+    "start": "node server.cjs",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "react",
+    "rich-text-editor",
+    "tiptap",
+    "nextjs",
+    "editor",
+    "component-library"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Venky225141125/ve.git"
+  },
+  "homepage": "https://github.com/Venky225141125/ve",
+  "bugs": {
+    "url": "https://github.com/Venky225141125/ve/issues"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "@google/genai": "^1.52.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@tiptap/core": "^3.30.1",
+    "@tiptap/extension-character-count": "^3.30.1",
+    "@tiptap/extension-color": "^3.30.1",
+    "@tiptap/extension-font-family": "^3.30.1",
+    "@tiptap/extension-highlight": "^3.30.1",
+    "@tiptap/extension-image": "^3.30.1",
+    "@tiptap/extension-link": "^3.30.1",
+    "@tiptap/extension-placeholder": "^3.30.1",
+    "@tiptap/extension-subscript": "^3.30.1",
+    "@tiptap/extension-superscript": "^3.30.1",
+    "@tiptap/extension-table": "^3.30.1",
+    "@tiptap/extension-table-cell": "^3.30.1",
+    "@tiptap/extension-table-header": "^3.30.1",
+    "@tiptap/extension-table-row": "^3.30.1",
+    "@tiptap/extension-task-item": "^3.30.1",
+    "@tiptap/extension-task-list": "^3.30.1",
+    "@tiptap/extension-text-align": "^3.30.1",
+    "@tiptap/extension-text-style": "^3.30.1",
+    "@tiptap/extension-underline": "^3.30.1",
+    "@tiptap/extension-youtube": "^3.30.1",
+    "@tiptap/react": "^3.30.1",
+    "@tiptap/starter-kit": "^3.30.1",
+    "dompurify": "^3.4.13",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^5.0.4",
+    "autoprefixer": "^10.4.21",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "vite-plugin-dts": "^4.1.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

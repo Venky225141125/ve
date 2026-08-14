@@ -1,0 +1,6 @@
+{
+  "name": "React Rich Text Editor",
+  "description": "A production-ready, modular, accessible Rich Text Editor component library for React and Next.js built with Tiptap, ProseMirror, and TypeScript.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
