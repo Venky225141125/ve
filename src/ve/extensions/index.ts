@@ -21,6 +21,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 
 import { FontSize } from './fontSize';
 import { CustomImage } from './images';
+import { FilterEmoji } from './filterEmoji';
 import type { RichTextEditorFeatures } from '../types/features';
 
 export interface CreateExtensionsOptions {
@@ -28,6 +29,7 @@ export interface CreateExtensionsOptions {
   placeholder?: string;
   maxCharacters?: number;
   customExtensions?: AnyExtension[];
+  allowEmoji?: boolean;
 }
 
 export function createEditorExtensions(options: CreateExtensionsOptions = {}): AnyExtension[] {
@@ -35,7 +37,8 @@ export function createEditorExtensions(options: CreateExtensionsOptions = {}): A
     features = {},
     placeholder = 'Start writing...',
     maxCharacters,
-    customExtensions = []
+    customExtensions = [],
+    allowEmoji = true,
   } = options;
 
   const exts: AnyExtension[] = [];
@@ -227,6 +230,8 @@ export function createEditorExtensions(options: CreateExtensionsOptions = {}): A
     );
   }
 
+  exts.push(FilterEmoji.configure({ enabled: allowEmoji === false }));
+
   // Custom extensions
   if (customExtensions.length > 0) {
     exts.push(...customExtensions);
@@ -237,3 +242,4 @@ export function createEditorExtensions(options: CreateExtensionsOptions = {}): A
 
 export * from './fontSize';
 export * from './images';
+export * from './filterEmoji';

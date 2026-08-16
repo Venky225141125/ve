@@ -103,7 +103,9 @@ export default function Page() {
 | `editable` | `boolean` | `true` | Read-only when `false` |
 | `placeholder` | `string` | `'Start writing...'` | Empty-state text |
 | `features` | `RichTextEditorFeatures` | all on | Toggle headings, tables, images, etc. |
-| `toolbar` | `ToolbarConfig \| false` | full toolbar | Custom item list, or hide |
+| `toolbar` | `'full' \| 'standard' \| 'minimal' \| 'none' \| items[]` | `'full'` | Toolbar size, hide, or a custom item list |
+| `showStats` | `boolean \| { words, characters, readingTime, status }` | `false` | Footer stats. Off unless you opt in |
+| `allowEmoji` | `boolean` | `true` | `false` hides the picker and blocks emoji input |
 | `theme` | `RichTextEditorTheme` | — | Dynamic colors, fonts, radius (`--rte-*` vars) |
 | `style` | `CSSProperties` | — | Instance CSS (height, extra variables). Wins over `theme` |
 | `cssVariables` | `Record<string, string>` | — | Extra `--rte-*` (or any) CSS variables |
@@ -111,7 +113,6 @@ export default function Page() {
 | `className` | `string` | — | Class on the editor root |
 | `onImageUpload` | `(file: File) => Promise<string>` | base64 fallback | Upload handler |
 | `maxCharacters` | `number` | — | Character limit |
-| `showStats` | `boolean` | `true` | Word / character bar |
 | `stickyToolbar` | `boolean` | `true` | Pin toolbar |
 | `bubbleMenu` | `boolean` | `true` | Selection formatting bar |
 
@@ -142,6 +143,28 @@ Pass a `theme` object, `cssVariables`, and/or `style`. Changing them in React st
 ```
 
 Host CSS tokens (`--primary`, `--popover`, `--border`, `--radius`) are picked up automatically if you do not pass `theme`. `style` and `cssVariables` always win over those defaults.
+
+## Toolbar, stats, and restrictions
+
+```tsx
+<RichTextEditor
+  value={html}
+  onChange={setHtml}
+  toolbar="minimal"          // or "full" | "standard" | "none"
+  showStats={{               // omit entirely to hide the footer
+    words: true,
+    characters: true,
+  }}
+  allowEmoji={false}         // no picker, and emoji cannot be typed/pasted
+  features={{
+    images: false,
+    youtube: false,
+    tables: false,
+  }}
+/>
+```
+
+`toolbar={['bold', 'italic', 'link']}` still works if you want an exact item list.
 
 ## Local development
 

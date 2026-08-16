@@ -52,7 +52,9 @@ export type ToolbarItem = StandardToolbarItem | CustomToolbarItem;
 
 export type ToolbarGroup = ToolbarItem[];
 
-export type ToolbarConfig = ToolbarItem[] | ToolbarGroup[] | false;
+export type ToolbarPreset = 'full' | 'standard' | 'minimal' | 'limited' | 'none';
+
+export type ToolbarConfig = ToolbarPreset | ToolbarItem[] | ToolbarGroup[] | false;
 
 export interface CustomToolbarProps {
   editor: Editor | null;

@@ -131,7 +131,8 @@ export function App() {
   const [isEditable, setIsEditable] = useState<boolean>(true);
   const [stickyToolbar, setStickyToolbar] = useState<boolean>(true);
   const [bubbleMenu, setBubbleMenu] = useState<boolean>(true);
-  const [showStats, setShowStats] = useState<boolean>(true);
+  const [showStats, setShowStats] = useState<boolean>(false);
+  const [allowEmoji, setAllowEmoji] = useState<boolean>(true);
   const [maxCharsEnabled, setMaxCharsEnabled] = useState<boolean>(false);
   const [maxChars, setMaxChars] = useState<number>(1000);
   const [selectedThemeKey, setSelectedThemeKey] = useState<string>('default');
@@ -237,7 +238,9 @@ export default function DocumentEditor() {
         editable={${isEditable}}
         stickyToolbar={${stickyToolbar}}
         bubbleMenu={${bubbleMenu}}
-        showStats={${showStats}}${maxCharsEnabled ? `\n        maxCharacters={${maxChars}}` : ''}
+        showStats={${showStats}}
+        allowEmoji={${allowEmoji}}${maxCharsEnabled ? `\n        maxCharacters={${maxChars}}` : ''}
+        toolbar="${selectedToolbarKey}"
         theme={${JSON.stringify(THEME_PRESETS[selectedThemeKey].theme, null, 2).replace(/\n/g, '\n        ')}}
         features={{
 ${featureLines ? featureLines + '\n' : ''}        }}
@@ -251,9 +254,11 @@ ${featureLines ? featureLines + '\n' : ''}        }}
     stickyToolbar,
     bubbleMenu,
     showStats,
+    allowEmoji,
     maxCharsEnabled,
     maxChars,
     selectedThemeKey,
+    selectedToolbarKey,
   ]);
 
   return (
@@ -407,6 +412,7 @@ ${featureLines ? featureLines + '\n' : ''}        }}
               stickyToolbar={stickyToolbar}
               bubbleMenu={bubbleMenu}
               showStats={showStats}
+              allowEmoji={allowEmoji}
               maxCharacters={maxCharsEnabled ? maxChars : undefined}
               placeholder="Write your story, design specifications, or notes here..."
               className="min-h-[420px]"
@@ -591,6 +597,16 @@ ${featureLines ? featureLines + '\n' : ''}        }}
                   type="checkbox"
                   checked={showStats}
                   onChange={(e) => setShowStats(e.target.checked)}
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                />
+              </label>
+
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-slate-700 dark:text-slate-300 font-medium">Allow Emoji</span>
+                <input
+                  type="checkbox"
+                  checked={allowEmoji}
+                  onChange={(e) => setAllowEmoji(e.target.checked)}
                   className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
                 />
               </label>

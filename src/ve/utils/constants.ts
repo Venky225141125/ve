@@ -1,3 +1,5 @@
+import type { StandardToolbarItem, ToolbarConfig, ToolbarItem } from '../types/toolbar';
+
 export const DEFAULT_FONT_FAMILIES = [
   { label: 'Default (Sans-serif)', value: 'inherit' },
   { label: 'Inter / System', value: 'system-ui, -apple-system, sans-serif' },
@@ -87,17 +89,35 @@ export const DEFAULT_TOOLBAR_ITEMS: string[] = [
   'sourceCode'
 ];
 
+export const STANDARD_TOOLBAR_ITEMS: string[] = [
+  'undo',
+  'redo',
+  '|',
+  'heading',
+  '|',
+  'bold',
+  'italic',
+  'underline',
+  '|',
+  'textColor',
+  'highlight',
+  '|',
+  'bulletList',
+  'orderedList',
+  '|',
+  'link',
+  'image',
+];
+
 export const MINIMAL_TOOLBAR_ITEMS: string[] = [
   'bold',
   'italic',
   'underline',
   '|',
-  'heading',
   'bulletList',
   'orderedList',
   '|',
   'link',
-  'image'
 ];
 
 const TOOLBAR_FEATURE_MAP: Record<string, string> = {
@@ -145,6 +165,32 @@ export function isToolbarItemEnabled(
   const featureKey = TOOLBAR_FEATURE_MAP[item];
   if (!featureKey) return true;
   return features[featureKey] !== false;
+}
+
+export function toolbarOffersItem(
+  toolbar: ToolbarItem[] | false,
+  item: StandardToolbarItem,
+  features: Record<string, unknown> = {}
+): boolean {
+  if (toolbar === false) return false;
+  return toolbar.some((entry) => entry === item && isToolbarItemEnabled(entry, features));
+}
+
+export function resolveToolbarItems(toolbar?: ToolbarConfig): ToolbarItem[] | false {
+  if (toolbar === false || toolbar === 'none') return false;
+  if (toolbar === undefined || toolbar === 'full') {
+    return DEFAULT_TOOLBAR_ITEMS as ToolbarItem[];
+  }
+  if (toolbar === 'standard') {
+    return STANDARD_TOOLBAR_ITEMS as ToolbarItem[];
+  }
+  if (toolbar === 'minimal' || toolbar === 'limited') {
+    return MINIMAL_TOOLBAR_ITEMS as ToolbarItem[];
+  }
+  if (Array.isArray(toolbar)) {
+    return toolbar.flat() as ToolbarItem[];
+  }
+  return DEFAULT_TOOLBAR_ITEMS as ToolbarItem[];
 }
 
 export function collapseToolbarSeparators<T>(items: T[]): T[] {

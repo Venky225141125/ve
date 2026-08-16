@@ -49,7 +49,9 @@ export function MyEditor() {
         placeholder="Write something brilliant..."
         stickyToolbar={true}
         bubbleMenu={true}
-        showStats={true}
+        toolbar="minimal"
+        allowEmoji={false}
+        showStats={{ words: true, characters: true }}
       />
     </div>
   );

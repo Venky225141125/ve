@@ -3,6 +3,7 @@ import { useEditor, type Editor, type JSONContent } from '@tiptap/react';
 import { createEditorExtensions } from '../extensions';
 import { extractRichTextValue, countWords, calculateReadingTime } from '../utils/serialization';
 import { applyEditorLink } from '../utils/links';
+import { stripEmojiTransaction } from '../extensions/filterEmoji';
 import type { RichTextEditorProps, RichTextValue } from '../types/editor';
 
 export interface UseRichTextEditorOptions
@@ -21,6 +22,7 @@ export interface UseRichTextEditorOptions
     | 'dir'
     | 'onFocus'
     | 'onBlur'
+    | 'allowEmoji'
   > {
   onUpdate?: (editor: Editor) => void;
 }
@@ -99,6 +101,7 @@ export function useRichTextEditor(options: UseRichTextEditorOptions = {}): UseRi
     onFocus,
     onBlur,
     onUpdate,
+    allowEmoji = true,
   } = options;
 
   const onChangeRef = useRef(onChange);
@@ -122,8 +125,10 @@ export function useRichTextEditor(options: UseRichTextEditorOptions = {}): UseRi
         placeholder,
         maxCharacters,
         customExtensions,
+        allowEmoji,
       }),
-    // maxCharacters is applied live below so slider changes do not remount the editor.
+    // maxCharacters and allowEmoji are applied live below so toggling them
+    // does not remount the editor (that froze the playground page).
     // customExtensions is intentionally omitted: callers should memoize it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [featuresKey, placeholder]
@@ -164,6 +169,24 @@ export function useRichTextEditor(options: UseRichTextEditorOptions = {}): UseRi
     if (!editor || editor.isDestroyed) return;
     setCharacterLimit(editor, maxCharacters);
   }, [editor, maxCharacters]);
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const extension = editor.extensionManager.extensions.find((ext) => ext.name === 'filterEmoji');
+    if (!extension) return;
+
+    const blockEmoji = allowEmoji === false;
+    extension.options.enabled = blockEmoji;
+    if (editor.storage.filterEmoji) {
+      editor.storage.filterEmoji.enabled = blockEmoji;
+    }
+
+    if (!blockEmoji) return;
+    const transaction = stripEmojiTransaction(editor.state);
+    if (transaction) {
+      editor.view.dispatch(transaction);
+    }
+  }, [editor, allowEmoji]);
 
   useEffect(() => {
     if (!editor || editor.isDestroyed || value === undefined) return;

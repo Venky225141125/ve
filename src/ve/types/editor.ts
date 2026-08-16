@@ -12,6 +12,13 @@ export interface RichTextValue {
 
 export type ImageUploadHandler = (file: File) => Promise<string>;
 
+export interface EditorStatsConfig {
+  words?: boolean;
+  characters?: boolean;
+  readingTime?: boolean;
+  status?: boolean;
+}
+
 export interface RichTextEditorRef {
   editor: Editor | null;
   getHTML: () => string;
@@ -36,7 +43,12 @@ export interface RichTextEditorProps {
   editable?: boolean;
   placeholder?: string;
   features?: RichTextEditorFeatures;
-  toolbar?: ToolbarConfig | false;
+  /**
+   * Toolbar size or a custom item list.
+   * `'full'` all tools · `'standard'` common tools · `'minimal'` / `'limited'` a short set · `'none'` / `false` hide.
+   * Or pass exact items: `['bold', 'italic', 'link']`.
+   */
+  toolbar?: ToolbarConfig;
   renderToolbar?: (props: CustomToolbarProps) => ReactNode;
   /**
    * Named theme tokens. Safe to change at runtime (role theme, dark mode, etc).
@@ -57,7 +69,17 @@ export interface RichTextEditorProps {
   dark?: boolean;
   onImageUpload?: ImageUploadHandler;
   maxCharacters?: number;
-  showStats?: boolean;
+  /**
+   * Footer stats. Off by default.
+   * Pass `true` for all, or pick fields: `{ words: true, characters: true }`.
+   */
+  showStats?: boolean | EditorStatsConfig;
+  /**
+   * When `false`, the emoji toolbar button is hidden and emoji cannot be typed,
+   * pasted, or dropped into the editor. Emoji is also blocked when the current
+   * toolbar does not include the emoji tool.
+   */
+  allowEmoji?: boolean;
   stickyToolbar?: boolean;
   bubbleMenu?: boolean;
   autoFocus?: boolean | 'start' | 'end' | 'all' | number;

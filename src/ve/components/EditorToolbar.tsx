@@ -52,7 +52,7 @@ import {
   DEFAULT_FONT_SIZES,
   TEXT_COLORS,
   HIGHLIGHT_COLORS,
-  DEFAULT_TOOLBAR_ITEMS,
+  resolveToolbarItems,
   isToolbarItemEnabled,
   collapseToolbarSeparators,
 } from '../utils/constants';
@@ -76,7 +76,7 @@ export interface EditorToolbarProps {
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   editor,
-  toolbar = DEFAULT_TOOLBAR_ITEMS,
+  toolbar,
   features = {},
   onImageUpload,
   isFullscreen = false,
@@ -101,14 +101,13 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     return () => window.removeEventListener('ve:open-link-modal', openLink);
   }, [disabled, editor]);
 
-  if (toolbar === false || !editor) return null;
+  if (!editor) return null;
 
-  const rawItems = (Array.isArray(toolbar)
-    ? toolbar.flat()
-    : DEFAULT_TOOLBAR_ITEMS) as ToolbarItem[];
+  const resolvedToolbar = resolveToolbarItems(toolbar);
+  if (resolvedToolbar === false) return null;
 
   const toolbarItems = collapseToolbarSeparators(
-    rawItems.filter((item) => isToolbarItemEnabled(item, features as Record<string, unknown>))
+    resolvedToolbar.filter((item) => isToolbarItemEnabled(item, features as Record<string, unknown>))
   );
 
   // Current states

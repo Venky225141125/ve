@@ -14,6 +14,8 @@ import { EditorStats } from './EditorStats';
 import { HTMLCodeEditor } from './HTMLCodeEditor';
 import { buildThemeStyles } from '../utils/theme';
 import { sanitizeHTML } from '../utils/serialization';
+import { resolveToolbarItems, toolbarOffersItem } from '../utils/constants';
+import { resolveStatsConfig } from './EditorStats';
 import type { RichTextEditorProps, RichTextEditorRef } from '../types/editor';
 
 export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
@@ -34,7 +36,8 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       dark,
       onImageUpload,
       maxCharacters,
-      showStats = true,
+      showStats = false,
+      allowEmoji = true,
       stickyToolbar = true,
       bubbleMenu = true,
       autoFocus = false,
@@ -52,6 +55,14 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isSourceCodeView, setIsSourceCodeView] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const toolbarFeatures = {
+      ...features,
+      emoji: allowEmoji === false ? false : features.emoji,
+    };
+    const resolvedToolbar = resolveToolbarItems(toolbar);
+    const canUseEmoji =
+      allowEmoji !== false && toolbarOffersItem(resolvedToolbar, 'emoji', toolbarFeatures);
+    const statsConfig = resolveStatsConfig(showStats);
 
     const editorState = useRichTextEditor({
       value,
@@ -61,6 +72,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
       editable,
       placeholder,
       features,
+      allowEmoji: canUseEmoji,
       maxCharacters,
       autoFocus,
       customExtensions,
@@ -141,7 +153,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
         style={{ ...themeStyles, ...style }}
         className={`rte-root ${dark ? 'dark' : ''} ${isFullscreen ? 'rte-fullscreen' : ''} ${className}`.trim()}
       >
-        {toolbar !== false && (
+        {resolvedToolbar !== false && (
           <div className={`rte-toolbar-wrapper ${stickyToolbar ? 'rte-sticky' : ''} ${toolbarClassName}`.trim()}>
             {renderToolbar ? (
               renderToolbar({
@@ -154,8 +166,8 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
             ) : (
               <EditorToolbar
                 editor={editor}
-                toolbar={toolbar}
-                features={features}
+                toolbar={resolvedToolbar}
+                features={toolbarFeatures}
                 onImageUpload={onImageUpload}
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={handleToggleFullscreen}
@@ -188,13 +200,14 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
           )}
         </div>
 
-        {showStats && (
+        {statsConfig && (
           <EditorStats
             wordCount={wordCount}
             characterCount={characterCount}
             readingTime={readingTime}
             maxCharacters={maxCharacters}
             isEditable={editable}
+            config={statsConfig}
           />
         )}
       </div>
