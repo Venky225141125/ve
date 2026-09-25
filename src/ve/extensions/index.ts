@@ -11,10 +11,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import Link from '@tiptap/extension-link';
-import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
-import TableHeader from '@tiptap/extension-table-header';
-import TableCell from '@tiptap/extension-table-cell';
+import { StyledTable, StyledTableCell, StyledTableHeader, StyledTableView } from './table';
 import Youtube from '@tiptap/extension-youtube';
 import CharacterCount from '@tiptap/extension-character-count';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -164,8 +162,9 @@ export function createEditorExtensions(options: CreateExtensionsOptions = {}): A
   if (features.tables !== false) {
     const tableConfig = typeof features.tables === 'object' ? features.tables : {};
     exts.push(
-      Table.configure({
+      StyledTable.configure({
         resizable: tableConfig.resizable ?? true,
+        View: StyledTableView,
         HTMLAttributes: {
           class: 'rte-table',
         },
@@ -175,12 +174,12 @@ export function createEditorExtensions(options: CreateExtensionsOptions = {}): A
           class: 'rte-table-row',
         },
       }),
-      TableHeader.configure({
+      StyledTableHeader.configure({
         HTMLAttributes: {
           class: 'rte-table-header',
         },
       }),
-      TableCell.configure({
+      StyledTableCell.configure({
         HTMLAttributes: {
           class: 'rte-table-cell',
         },
@@ -243,3 +242,4 @@ export function createEditorExtensions(options: CreateExtensionsOptions = {}): A
 export * from './fontSize';
 export * from './images';
 export * from './filterEmoji';
+export * from './table';

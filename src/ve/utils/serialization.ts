@@ -21,7 +21,8 @@ export function sanitizeHTML(html: string): string {
     ALLOWED_ATTR: [
       'href', 'src', 'alt', 'title', 'target', 'rel', 'class', 'style',
       'type', 'checked', 'disabled', 'width', 'height', 'frameborder',
-      'allow', 'allowfullscreen', 'colspan', 'rowspan', 'colwidth',
+      'allow', 'allowfullscreen', 'colspan', 'rowspan', 'colwidth', 'align',
+      'data-border', 'data-striped', 'data-background-color', 'data-text-color',
       'data-type', 'data-alignment', 'data-youtube-video', 'dir'
     ],
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
