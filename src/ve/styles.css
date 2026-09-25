@@ -177,18 +177,15 @@ html.dark .rte-root,
 }
 
 .rte-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 6px;
+  position: fixed;
+  z-index: 220;
+  margin: 0;
   padding: 4px 8px;
   background: #0f172a;
   color: #f8fafc;
   font-size: 11px;
   border-radius: 6px;
   white-space: nowrap;
-  z-index: 50;
   pointer-events: none;
   display: flex;
   align-items: center;
