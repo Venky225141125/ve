@@ -5,6 +5,7 @@ import React, {
   useRef,
   useCallback,
   useEffect,
+  useLayoutEffect,
 } from 'react';
 import { EditorContent } from '@tiptap/react';
 import { useRichTextEditor } from '../hooks/useRichTextEditor';
@@ -12,10 +13,11 @@ import { EditorToolbar } from './EditorToolbar';
 import { EditorBubbleMenu } from './BubbleMenu';
 import { EditorStats } from './EditorStats';
 import { HTMLCodeEditor } from './HTMLCodeEditor';
-import { buildThemeStyles } from '../utils/theme';
+import { buildThemeStyles, readControlContrast } from '../utils/theme';
 import { sanitizeHTML } from '../utils/serialization';
 import { resolveToolbarItems, toolbarOffersItem } from '../utils/constants';
 import { resolveStatsConfig } from './EditorStats';
+import type { CSSProperties } from 'react';
 import type { RichTextEditorProps, RichTextEditorRef } from '../types/editor';
 
 export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
@@ -143,6 +145,35 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
     }, [isFullscreen]);
 
     const themeStyles = buildThemeStyles(theme, cssVariables);
+    const [contrastStyle, setContrastStyle] = useState<CSSProperties>({});
+
+    useLayoutEffect(() => {
+      const root = containerRef.current;
+      if (!root) return;
+
+      const apply = () => {
+        const next = readControlContrast(root);
+        setContrastStyle((prev) => {
+          const previous = prev as Record<string, string>;
+          const upcoming = next as Record<string, string>;
+          if (
+            previous['--rte-on-toolbar'] === upcoming['--rte-on-toolbar'] &&
+            previous['--rte-on-surface'] === upcoming['--rte-on-surface'] &&
+            previous['--rte-on-hover'] === upcoming['--rte-on-hover'] &&
+            previous['--rte-on-active'] === upcoming['--rte-on-active']
+          ) {
+            return prev;
+          }
+          return next;
+        });
+      };
+
+      apply();
+      const observer = new MutationObserver(apply);
+      observer.observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      return () => observer.disconnect();
+    }, [theme, dark, cssVariables]);
 
     return (
       <div
@@ -150,7 +181,7 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>
         id={id}
         role="region"
         aria-label={ariaLabel}
-        style={{ ...themeStyles, ...style }}
+        style={{ ...themeStyles, ...contrastStyle, ...style }}
         className={`rte-root ${dark ? 'dark' : ''} ${isFullscreen ? 'rte-fullscreen' : ''} ${className}`.trim()}
       >
         {resolvedToolbar !== false && (

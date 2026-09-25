@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { Editor } from '@tiptap/core';
+import { readEditorTheme } from '../utils/theme';
 import {
   Bold,
   Italic,
@@ -22,6 +23,16 @@ export interface BubbleMenuProps {
 const VIEWPORT_PADDING = 8;
 const MENU_GAP = 8;
 
+function stylesMatch(current: CSSProperties, next: CSSProperties): boolean {
+  const left = current as Record<string, string>;
+  const right = next as Record<string, string>;
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  for (const key of keys) {
+    if (left[key] !== right[key]) return false;
+  }
+  return true;
+}
+
 function clamp(value: number, min: number, max: number): number {
   if (max < min) return min;
   return Math.min(Math.max(value, min), max);
@@ -30,6 +41,8 @@ function clamp(value: number, min: number, max: number): number {
 export const EditorBubbleMenu: React.FC<BubbleMenuProps> = ({ editor, onOpenLinkModal }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [themeStyle, setThemeStyle] = useState<CSSProperties>({});
+  const [isDark, setIsDark] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const updatePosition = useCallback(() => {
@@ -113,6 +126,24 @@ export const EditorBubbleMenu: React.FC<BubbleMenuProps> = ({ editor, onOpenLink
     }
   }, [isVisible, updatePosition]);
 
+  useLayoutEffect(() => {
+    if (!isVisible) return;
+    const host = editor?.view?.dom ?? null;
+
+    const applyTheme = () => {
+      const theme = readEditorTheme(host);
+      setIsDark((prev) => (prev === theme.isDark ? prev : theme.isDark));
+      setThemeStyle((prev) => (stylesMatch(prev, theme.style) ? prev : theme.style));
+    };
+
+    applyTheme();
+    const root = host?.closest('.rte-root');
+    const observer = new MutationObserver(applyTheme);
+    if (root) observer.observe(root, { attributes: true, attributeFilter: ['style', 'class'] });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, [isVisible, editor]);
+
   if (!editor || typeof document === 'undefined') return null;
 
   const btn = (active: boolean) => `rte-btn ${active ? 'is-active' : ''}`;
@@ -131,8 +162,9 @@ export const EditorBubbleMenu: React.FC<BubbleMenuProps> = ({ editor, onOpenLink
         visibility: isVisible ? 'visible' : 'hidden',
         opacity: isVisible ? 1 : 0,
         pointerEvents: isVisible ? 'auto' : 'none',
+        ...themeStyle,
       }}
-      className="rte-bubble"
+      className={`rte-bubble${isDark ? ' dark' : ''}`}
       onMouseDown={(e) => {
         e.preventDefault();
       }}
