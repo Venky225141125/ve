@@ -1,6 +1,9 @@
 import type { CSSProperties } from 'react';
 import type { RichTextEditorTheme } from '../types/theme';
 
+/** WCAG minimum for icons and other UI graphics. */
+const ICON_CONTRAST = 3;
+
 const LIGHT = {
   popover: '#ffffff',
   popoverForeground: '#0f172a',
@@ -38,6 +41,8 @@ const COLOR_VARS = [
   '--rte-danger',
   '--rte-success',
   '--rte-overlay',
+  '--rte-on-hover',
+  '--rte-on-active',
 ] as const;
 
 function isUsableColor(value: string): boolean {
@@ -148,6 +153,74 @@ export function readEditorTheme(from?: Element | null): {
       borderColor: border,
     },
   };
+}
+
+function parseColor(color: string): [number, number, number] | null {
+  const rgb = color.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
+  if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+
+  const hex = color.trim().replace('#', '');
+  if (!/^[0-9a-f]{3}$|^[0-9a-f]{6}$/i.test(hex)) return null;
+  const full = hex.length === 3 ? hex.split('').map((char) => char + char).join('') : hex;
+  return [parseInt(full.slice(0, 2), 16), parseInt(full.slice(2, 4), 16), parseInt(full.slice(4, 6), 16)];
+}
+
+function channel(value: number): number {
+  const scaled = value / 255;
+  return scaled <= 0.03928 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
+}
+
+function contrastRatio(a: [number, number, number], b: [number, number, number]): number {
+  const luminance = (rgb: [number, number, number]) =>
+    0.2126 * channel(rgb[0]) + 0.7152 * channel(rgb[1]) + 0.0722 * channel(rgb[2]);
+  const lighter = Math.max(luminance(a), luminance(b));
+  const darker = Math.min(luminance(a), luminance(b));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function readableOn(background: string, preferred: string[]): string {
+  const bg = parseColor(background);
+  const options = preferred
+    .map((color) => ({ color, rgb: parseColor(color) }))
+    .filter((item): item is { color: string; rgb: [number, number, number] } => Boolean(item.rgb));
+  if (!bg || options.length === 0) return preferred[0] || '#0f172a';
+
+  const passing = options.find((item) => contrastRatio(bg, item.rgb) >= ICON_CONTRAST);
+  if (passing) return passing.color;
+
+  return options.sort((a, b) => contrastRatio(bg, b.rgb) - contrastRatio(bg, a.rgb))[0].color;
+}
+
+/**
+ * Picks icon colors that stay visible on the toolbar, including hover and selected fills.
+ * A light toolbar on a dark page (Emerald Forest) would otherwise keep light icons.
+ */
+export function readControlContrast(root: HTMLElement): CSSProperties {
+  const toolbarBg = resolveCssColor(root, '--rte-toolbar-background');
+  const hoverBg = resolveCssColor(root, '--rte-control-hover');
+  const text = resolveCssColor(root, '--rte-text');
+  const control = resolveCssColor(root, '--rte-control');
+  const primary = resolveCssColor(root, '--rte-primary');
+  const ink = '#0f172a';
+  const paper = '#f8fafc';
+  const surfaceBg = resolveCssColor(root, '--rte-background');
+  const preferred = [control, text, ink, paper].filter(Boolean);
+  const onToolbar = toolbarBg ? readableOn(toolbarBg, preferred) : control || ink;
+  const onSurface = surfaceBg ? readableOn(surfaceBg, preferred) : control || ink;
+
+  if (!hoverBg) {
+    return {
+      '--rte-on-toolbar': onToolbar,
+      '--rte-on-surface': onSurface,
+    } as CSSProperties;
+  }
+
+  return {
+    '--rte-on-toolbar': onToolbar,
+    '--rte-on-surface': onSurface,
+    '--rte-on-hover': readableOn(hoverBg, [onToolbar, ...preferred]),
+    '--rte-on-active': readableOn(hoverBg, [primary, onToolbar, ...preferred].filter(Boolean)),
+  } as CSSProperties;
 }
 
 function assignVar(target: Record<string, string>, name: string, value?: string) {
