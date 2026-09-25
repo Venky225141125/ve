@@ -1,6 +1,6 @@
 {
   "name": "ve-rich-text-editor",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Drop-in rich text editor for React and Next.js, built on Tiptap.",
   "author": "Venky225141125 <venkatesh.edubilli@gmail.com>",
   "type": "module",
